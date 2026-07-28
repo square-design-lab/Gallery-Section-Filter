@@ -6,834 +6,1197 @@
 <title>SDL Gallery Filter — Config Generator</title>
 <style>
   :root{
-    --bg:#f6f6f4; --panel:#fff; --ink:#16161a; --muted:#6b6b76;
-    --line:#e2e2dd; --accent:#16161a; --ok:#1a7f4b; --warn:#9a6b00; --warnbg:#fff8e6;
-    --r:8px;
+    --bg:#f6f7f9; --panel:#fff; --ink:#16181d; --muted:#6b7280; --line:#e3e6ea;
+    --accent:#111; --accent-hover:#2b2f36; --accent-soft:#eef0f3; --radius:8px; --header-h:56px;
   }
   *{box-sizing:border-box}
-  body{margin:0;font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;color:var(--ink);background:var(--bg)}
-  h1,h2,h3,h4{margin:0;font-weight:600;letter-spacing:-.01em}
-  a{color:inherit}
+  body{margin:0;font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg)}
+  button,input,select,textarea{font:inherit;color:inherit}
 
-  .app{display:grid;grid-template-columns:264px 1fr;min-height:100vh}
+  .app{display:grid;grid-template-columns:390px 1fr;height:100vh}
+  @media(max-width:960px){.app{grid-template-columns:1fr;height:auto}}
 
-  /* ---- nav ---- */
-  .nav{background:var(--panel);border-right:1px solid var(--line);padding:22px 0;position:sticky;top:0;height:100vh;overflow-y:auto}
-  .nav .brand{padding:0 22px 18px;border-bottom:1px solid var(--line);margin-bottom:14px}
-  .nav .brand h1{font-size:15px}
-  .nav .brand p{margin:4px 0 0;font-size:12px;color:var(--muted)}
-  .nav button{display:block;width:100%;text-align:left;padding:9px 22px;font:inherit;background:none;border:0;cursor:pointer;color:var(--muted)}
-  .nav button:hover{background:#fafaf8;color:var(--ink)}
-  .nav button.on{color:var(--ink);font-weight:600;box-shadow:inset 3px 0 0 var(--accent)}
+  .side{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;overflow:hidden}
+  .side-head{height:var(--header-h);padding:0 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:9px;flex:none}
+  .side-head h1{margin:0;font-size:15px;font-weight:650;letter-spacing:-.01em}
+  .badge{padding:2px 7px;border-radius:99px;background:var(--accent);color:#fff;font-size:11px;font-weight:600}
+  .side-body{overflow-y:auto;padding:6px 0 60px;flex:1}
 
-  /* ---- main ---- */
-  .main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:0}
-  .pane{padding:26px 28px;overflow-y:auto;max-height:100vh}
-  .preview-pane{background:#fff;border-left:1px solid var(--line);position:sticky;top:0}
+  .grp{border-bottom:1px solid var(--line)}
+  .grp-head{width:100%;display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border:0;background:none;font-weight:600;cursor:pointer;text-align:left}
+  .grp-head svg{transition:transform .18s;flex:none}
+  .grp.closed .grp-head svg{transform:rotate(-90deg)}
+  .grp-body{padding:2px 18px 18px;display:grid;gap:13px}
+  .grp.closed .grp-body{display:none}
 
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;margin-bottom:16px}
-  .card > h3{font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:14px}
+  .row{display:grid;gap:5px}
+  .row label{font-size:12.5px;font-weight:550;color:#3a3f47}
+  .row input[type=text],.row input[type=number],.row select,.row textarea{
+    width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .row input[type=color]{width:100%;height:34px;padding:2px;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .row input:focus,.row select:focus,.row textarea:focus{outline:2px solid var(--accent);outline-offset:-1px}
+  .hint{font-size:11.5px;color:var(--muted)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .note{background:var(--accent-soft);border-radius:7px;padding:10px 12px;font-size:12.5px;color:#3a3f47}
+  .warn{background:#fff8e6;border:1px solid #f0e0b0;border-radius:7px;padding:10px 12px;font-size:12.5px;color:#5c4708}
 
-  .row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:8px 0}
-  .row + .row{border-top:1px solid #f1f1ee}
-  .row label{flex:1 1 auto}
-  .row .hint{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+  .tog{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .tog label{font-size:13px;font-weight:500}
+  .sw{position:relative;width:38px;height:22px;flex:none}
+  .sw input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;z-index:1}
+  .sw span{position:absolute;inset:0;background:#d3d7dd;border-radius:99px;transition:.18s}
+  .sw span:after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:.18s}
+  .sw input:checked + span{background:var(--accent)}
+  .sw input:checked + span:after{transform:translateX(16px)}
 
-  input[type=text],input[type=number],select,textarea{
-    font:inherit;color:inherit;background:#fff;border:1px solid var(--line);
-    border-radius:6px;padding:7px 10px;min-width:0
-  }
-  input[type=text],select{width:190px}
-  input[type=number]{width:88px}
-  textarea{width:100%;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
-  input[type=color]{width:38px;height:28px;padding:0;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .glist{display:grid;gap:8px}
+  .gitem{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:#fbfcfd}
+  .gitem.on{background:#fff;border-color:#cfd6de}
+  .gitem-head{display:flex;align-items:center;gap:8px;padding:10px 11px}
+  .gitem-head .nm{flex:1;font-weight:600;font-size:13px}
+  .gitem-head .vals{font-size:11px;color:var(--muted)}
+  .gitem.off .nm{color:var(--muted);font-weight:500}
+  .arrow{border:0;background:none;cursor:pointer;padding:2px;border-radius:4px;color:#aeb4bd;display:flex}
+  .arrow:hover{background:rgba(0,0,0,.07);color:var(--ink)}
+  .gitem-body{padding:0 11px 11px;display:grid;gap:9px;border-top:1px solid var(--line);padding-top:10px}
 
-  .sw{position:relative;width:40px;height:22px;flex:none}
-  .sw input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer;z-index:2;width:100%;height:100%}
-  .sw i{position:absolute;inset:0;background:#d6d6d0;border-radius:999px;transition:.2s}
-  .sw i:after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:.2s}
-  .sw input:checked + i{background:var(--accent)}
-  .sw input:checked + i:after{transform:translateX(18px)}
+  .main{display:flex;flex-direction:column;overflow:hidden}
+  .topbar{height:var(--header-h);padding:0 16px;border-bottom:1px solid var(--line);background:var(--panel);
+          display:flex;align-items:center;justify-content:space-between;gap:14px;flex:none}
+  .tabs{display:flex;gap:2px}
+  .tab{padding:7px 14px;border:0;background:none;cursor:pointer;border-radius:6px;font-weight:550;color:var(--muted)}
+  .tab.on{background:var(--accent-soft);color:var(--ink)}
+  .topbar-right{display:flex;align-items:center;gap:10px}
+  .devtog{background:#f2f2f2;padding:2px;border-radius:6px;display:flex}
+  .devtog button{border:0;background:transparent;padding:5px 11px;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;border-radius:4px;transition:.2s}
+  .devtog button.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.1)}
+  .copy-btn{background:var(--accent);color:#fff;border:0;padding:9px 18px;border-radius:7px;font-weight:600;font-size:13px;
+            cursor:pointer;display:flex;align-items:center;gap:7px;transition:transform .1s,background .2s;box-shadow:0 1px 3px rgba(0,0,0,.18)}
+  .copy-btn:hover{background:var(--accent-hover)}
+  .copy-btn:active{transform:scale(.97)}
+  .copy-btn.copied{background:#0ea5e9}
 
-  .group-card{border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:10px;background:#fcfcfb}
-  .group-card .gc-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-  .group-card .gc-head strong{flex:1 1 auto}
-  .btn{font:inherit;background:var(--accent);color:#fff;border:0;border-radius:6px;padding:8px 14px;cursor:pointer}
-  .btn.ghost{background:none;color:var(--muted);border:1px solid var(--line)}
-  .btn.sm{padding:5px 10px;font-size:12px}
+  .pane{flex:1;overflow:auto;padding:20px}
+  .pane[hidden]{display:none}
 
-  /* ---- guide ---- */
-  .note{background:var(--warnbg);border:1px solid #f0e0b0;border-radius:var(--r);padding:14px 16px;margin-bottom:16px}
-  .note h4{font-size:13px;margin-bottom:6px;color:var(--warn)}
-  .note p{margin:0 0 8px;font-size:13px}
-  .note p:last-child{margin-bottom:0}
-  .steps{counter-reset:s;list-style:none;padding:0;margin:0}
-  .steps li{counter-increment:s;position:relative;padding:0 0 16px 34px;margin:0}
-  .steps li:before{content:counter(s);position:absolute;left:0;top:0;width:22px;height:22px;border-radius:50%;
-    background:var(--accent);color:#fff;font-size:12px;display:grid;place-items:center;font-weight:600}
-  .steps li:not(:last-child):after{content:"";position:absolute;left:10.5px;top:26px;bottom:4px;width:1px;background:var(--line)}
-  .steps strong{display:block;margin-bottom:3px}
-  .steps p{margin:0;font-size:13px;color:var(--muted)}
-  code,kbd{background:#f0f0ec;border-radius:4px;padding:1px 5px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
-  pre{background:#16161a;color:#e8e8e4;border-radius:var(--r);padding:14px 16px;overflow:auto;font-size:12px;line-height:1.6}
-  pre .c{color:#7f9f7f}
-  table.ex{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
-  table.ex td,table.ex th{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
-  table.ex th{background:#fafaf8;font-weight:600}
+  .urlbar{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:7px 12px;background:#fff;
+          border:1px solid var(--line);border-radius:99px;font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted);
+          overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .urlbar b{color:var(--ink);font-weight:600}
+  .pv-note{font-size:12px;color:var(--muted);margin:0 0 12px}
+  .pv-types{display:flex;gap:2px;margin-bottom:12px}
+  .pv-types button{padding:5px 12px;border:1px solid var(--line);background:#fff;border-radius:99px;cursor:pointer;font-size:12px;color:var(--muted)}
+  .pv-types button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .pv-wrap{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .pv-scroll{position:relative;height:620px;overflow:auto;padding:20px}
+  .pv-wrap.mobile{max-width:430px;margin:0 auto}
 
-  /* ---- preview ---- */
-  .pv-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-  .pv-head h3{font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
-  .pv-tabs{display:flex;gap:4px}
-  .pv-tabs button{font:inherit;font-size:12px;padding:5px 11px;border:1px solid var(--line);background:#fff;border-radius:999px;cursor:pointer;color:var(--muted)}
-  .pv-tabs button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
-  .pv-stage{border:1px solid var(--line);border-radius:var(--r);padding:20px;background:#fffef5;min-height:420px}
-  .pv-count{font-size:12px;color:var(--muted);margin-top:12px}
+  pre{margin:0;padding:18px;background:#12141a;color:#e6e9ef;border-radius:10px;overflow:auto;
+      font:12.5px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;word-break:break-word}
+  .steps{background:#fff;border:1px solid var(--line);border-radius:10px;padding:20px;margin-bottom:16px}
+  .steps h3{margin:0 0 10px;font-size:14px}
+  .steps ol{margin:0;padding-left:20px}
+  .steps li{margin-bottom:7px}
+  .steps table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
+  .steps td,.steps th{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+  .steps th{background:#fafbfc;font-weight:600}
+  code.inl{background:var(--accent-soft);padding:1px 5px;border-radius:4px;font-size:12.5px}
 
-  /* preview mirrors the plugin's own class names so what you see is what ships */
-  .sdl-gf-root{margin-bottom:20px;font-size:13px}
-  .sdl-gf-bar{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:10px}
-  .sdl-gf-inline-groups{display:flex;flex-wrap:wrap;align-items:flex-end;gap:20px;flex:1 1 auto}
-  .sdl-gf-group{display:flex;flex-direction:column;gap:6px}
-  .sdl-gf-group-label{font-size:.8em;letter-spacing:.06em;text-transform:uppercase;opacity:.6}
-  .sdl-gf-options{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
-  .sdl-gf-opt{display:inline-flex;align-items:center;gap:6px;font:inherit;background:none;border:0;padding:0;cursor:pointer}
-  .sdl-gf-opt-pills{padding:6px 13px;border:1px solid rgba(0,0,0,.3);border-radius:999px}
-  .sdl-gf-opt-chips{padding:6px 12px;border:1px solid rgba(0,0,0,.3);border-radius:6px}
-  .sdl-gf-opt-text{opacity:.65;padding:2px 0}
-  .sdl-gf-opt-on{background:#16161a;border-color:#16161a;color:#fff;opacity:1}
-  .sdl-gf-opt-text.sdl-gf-opt-on{background:none;color:#16161a;text-decoration:underline;text-underline-offset:4px}
-  .sdl-gf-opt-disabled{opacity:.32;pointer-events:none}
-  .sdl-gf-opt-count{font-size:.82em;opacity:.65}
-  .sdl-gf-delim{opacity:.4;padding:0 .45em}
-  .pv-grid{display:grid;gap:10px}
-  .pv-tile{border-radius:3px;background:#dcdad0;position:relative;overflow:hidden;transition:opacity .25s}
-  .pv-tile span{position:absolute;left:7px;bottom:6px;font-size:10px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+  /* preview dropdown open/close — mirrors galleryFilter.css */
+  .pvdd{overflow:hidden;display:grid;grid-template-rows:0fr;opacity:0;transform:translateY(-4px);visibility:hidden;
+    transition:grid-template-rows .28s cubic-bezier(.22,.61,.36,1),opacity .18s ease,
+               transform .28s cubic-bezier(.22,.61,.36,1),visibility 0s linear .28s}
+  .pvdd.open{grid-template-rows:1fr;opacity:1;transform:none;visibility:visible;
+    transition:grid-template-rows .28s cubic-bezier(.22,.61,.36,1),opacity .18s ease,
+               transform .28s cubic-bezier(.22,.61,.36,1),visibility 0s}
+  .pvdd-inner{min-height:0;overflow-y:auto;max-height:300px}
 
-  .copy-wrap{position:relative}
-  .copy-wrap .btn{position:absolute;top:10px;right:10px}
-  @media (max-width:1100px){.app{grid-template-columns:1fr}.nav{position:static;height:auto}.main{grid-template-columns:1fr}.preview-pane{position:static;max-height:none}}
+  @keyframes pv-fade{from{opacity:0}to{opacity:1}}
+  @keyframes pv-slide-up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+  @keyframes pv-zoom{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
 </style>
 </head>
 <body>
 <div class="app">
 
-  <nav class="nav">
-    <div class="brand">
-      <h1>Gallery Filter</h1>
-      <p>Square Design Lab · v1.0</p>
-    </div>
-    <button data-tab="setup" class="on">Setup guide</button>
-    <button data-tab="sections">Sections &amp; captions</button>
-    <button data-tab="groups">Filter groups</button>
-    <button data-tab="layout">Layout &amp; behaviour</button>
-    <button data-tab="searchsort">Search &amp; sort</button>
-    <button data-tab="styles">Styling</button>
-    <button data-tab="text">Labels &amp; text</button>
-    <button data-tab="install">Install code</button>
-  </nav>
+  <aside class="side">
+    <div class="side-head"><h1>Gallery Filter</h1><span class="badge">v1.1</span></div>
+    <div class="side-body">
 
-  <div class="main">
-    <div class="pane" id="panes"></div>
-
-    <div class="pane preview-pane">
-      <div class="pv-head">
-        <h3>Live preview</h3>
-        <div class="pv-tabs">
-          <button data-pv="grid" class="on">Grid</button>
-          <button data-pv="masonry">Masonry</button>
-          <button data-pv="strips">Strips</button>
+      <!-- CAPTIONS -->
+      <section class="grp" data-g>
+        <button class="grp-head" onclick="tog(this)">Captions &amp; Data
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+        <div class="grp-body">
+          <div class="warn"><b>Captions must be ON in Squarespace.</b> A gallery section has no JSON, so the caption in the page is the only place to read from — and Squarespace omits it entirely when captions are off. The plugin hides them again, so visitors never see the raw text. See the <b>Guide</b> tab.</div>
+          <div class="row"><label>What visitors see in the caption</label>
+            <select id="captionMode" onchange="sync()">
+              <option value="clean">Clean — strip the metadata, keep any prose</option>
+              <option value="meta">Meta — rebuild from chosen fields</option>
+              <option value="raw">Raw — leave the caption alone</option>
+              <option value="hide">Hide — no caption at all</option>
+            </select></div>
+          <div class="row" id="rowCapFields" hidden><label>Fields to show</label>
+            <input type="text" id="captionFields" placeholder="all fields" oninput="sync()">
+            <div class="hint">Comma separated, e.g. <code class="inl">Tags, Year</code>. Blank shows every field.</div></div>
+          <div class="row" id="rowCapDelim" hidden><label>Separator between fields</label>
+            <input type="text" id="captionDelimiter" value=" / " oninput="sync()"></div>
+          <div class="tog" id="rowCapKeys" hidden><label>Show the key names</label>
+            <span class="sw"><input type="checkbox" id="captionShowKeys" onchange="sync()"><span></span></span></div>
+          <div class="row"><label>Value separator inside a caption</label>
+            <select id="tagDelimiter" onchange="sync()">
+              <option value="comma">Comma ,</option><option value="pipe">Pipe |</option>
+              <option value="slash">Slash /</option><option value="semicolon">Semicolon ;</option>
+            </select>
+            <div class="hint">How several values are separated in one key. Location is never split, so “London, UK” stays whole.</div></div>
+          <div class="row"><label>Which gallery sections</label>
+            <input type="text" id="sections" placeholder="all gallery sections" oninput="sync()">
+            <div class="hint">Blank = every gallery on the page. Otherwise paste Section IDs, comma separated.</div></div>
         </div>
-      </div>
-      <div class="pv-stage">
-        <div id="pvBar"></div>
-        <div class="pv-grid" id="pvGrid"></div>
-      </div>
-      <div class="pv-count" id="pvCount"></div>
+      </section>
+
+      <!-- GROUPS -->
+      <section class="grp" data-g>
+        <button class="grp-head" onclick="tog(this)">Filter Groups
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+        <div class="grp-body">
+          <p class="hint">Discovered from your captions. Switch on what visitors can filter by; the arrows set the order.</p>
+          <div class="glist" id="groupList"></div>
+        </div>
+      </section>
+
+      <!-- DISPLAY -->
+      <section class="grp" data-g>
+        <button class="grp-head" onclick="tog(this)">Display
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+        <div class="grp-body" id="displayBody"></div>
+      </section>
+
+      <!-- ALL OPTION -->
+      <section class="grp closed" data-g>
+        <button class="grp-head" onclick="tog(this)">“All” Option
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+        <div class="grp-body">
+          <div class="tog"><label>Show an “All” entry in every filter</label>
+            <span class="sw"><input type="checkbox" id="showAllOption" checked onchange="renderGroups();sync()"><span></span></span></div>
+          <div class="hint">Sits first in each filter and clears it. Highlighted whenever that filter has nothing selected. Skipped for checkboxes, where clearing them is the same act.</div>
+          <div class="row" id="rowAllText"><label>“All” text</label>
+            <input type="text" id="allText" value="All" oninput="sync()"></div>
+          <div class="tog" id="rowUniqueAll"><label>Different text per filter</label>
+            <span class="sw"><input type="checkbox" id="uniqueAllText" onchange="renderGroups();sync()"><span></span></span></div>
+          <div class="hint" id="uniqueAllHint">Each filter gets its own box under <b>Filter Groups</b> — “All Categories”, “All Years”. Leave one blank to fall back to the text above.</div>
+        </div>
+      </section>
+
+      <!-- LAYOUT -->
+      <section class="grp closed" data-g>
+        <button class="grp-head" onclick="tog(this)">Layout &amp; Behavior
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+        <div class="grp-body">
+          <div class="row"><label>Placement</label>
+            <select id="layout" onchange="sync()">
+              <option value="top">Top bar</option><option value="sidebar">Left sidebar</option>
+            </select></div>
+          <div class="row" id="rowAlign"><label>Alignment</label>
+            <select id="align" onchange="sync()">
+              <option value="left">Left</option><option value="center">Centre</option><option value="right">Right</option>
+            </select></div>
+          <div class="row" id="rowSideW" hidden><label>Sidebar width</label>
+            <div class="two">
+              <input type="number" id="sidebarWidth" value="25" min="5" oninput="sync()">
+              <select id="sidebarWidthUnit" onchange="onUnitChange()"><option value="%">%</option><option value="px">px</option></select>
+            </div></div>
+          <div class="tog" id="rowStickySide" hidden><label>Sticky sidebar</label>
+            <span class="sw"><input type="checkbox" id="stickySidebar" onchange="sync()"><span></span></span></div>
+          <div class="tog" id="rowStickyBar"><label>Sticky toolbar</label>
+            <span class="sw"><input type="checkbox" id="stickyToolbar" onchange="sync()"><span></span></span></div>
+          <div class="row" id="rowStickyTop" hidden><label>Sticky offset (px)</label>
+            <input type="number" id="stickyTopOffset" value="20" oninput="sync()"></div>
+          <div class="tog"><label>“Filters” button on desktop</label>
+            <span class="sw"><input type="checkbox" id="fbDesktop" onchange="sync()"><span></span></span></div>
+          <div class="tog"><label>“Filters” button on mobile</label>
+            <span class="sw"><input type="checkbox" id="fbMobile" checked onchange="sync()"><span></span></span></div>
+          <div class="hint" id="fbHint"></div>
+          <div class="tog" id="rowFbHideGroups"><label>Desktop: button only (hide inline groups)</label>
+            <span class="sw"><input type="checkbox" id="fbHideGroups" onchange="sync()"><span></span></span></div>
+          <div class="row" id="rowFbSide"><label>Drawer slides from</label>
+            <select id="fbSide" onchange="sync()"><option value="left">Left</option><option value="right">Right</option></select></div>
+          <div class="row"><label>Mobile breakpoint (px)</label>
+            <input type="number" id="mobileBreakpoint" value="1024" oninput="sync()">
+            <div class="hint">Below this, filters collapse into the drawer. Use the Desktop/Mobile toggle to preview.</div></div>
+          <div class="tog"><label>Show result count</label>
+            <span class="sw"><input type="checkbox" id="showResultCount" onchange="sync()"><span></span></span></div>
+          <div class="tog"><label>Show active filter chips</label>
+            <span class="sw"><input type="checkbox" id="showActiveChips" onchange="sync()"><span></span></span></div>
+          <div class="hint">The removable chips listing what's currently selected.</div>
+          <div class="tog"><label>Show “Clear all”</label>
+            <span class="sw"><input type="checkbox" id="showClearAll" checked onchange="sync()"><span></span></span></div>
+          <div class="tog"><label>Dim options with no results</label>
+            <span class="sw"><input type="checkbox" id="disableZeroOptions" checked onchange="sync()"><span></span></span></div>
+          <div class="tog"><label>Sync filters to the URL</label>
+            <span class="sw"><input type="checkbox" id="urlSync" checked onchange="sync()"><span></span></span></div>
+          <div class="tog"><label>Scroll to gallery on filter change</label>
+            <span class="sw"><input type="checkbox" id="scrollOnChange" onchange="sync()"><span></span></span></div>
+          <!-- Not exposed: Squarespace consumes bare ?tag= / ?category= server-side,
+               so the prefix must stay. Kept as a field so the code path is honest. -->
+          <input type="hidden" id="urlParamPrefix" value="f_">
+        </div>
+      </section>
+
+      <!-- ANIMATION -->
+      <section class="grp closed" data-g>
+        <button class="grp-head" onclick="tog(this)">Animation
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+        <div class="grp-body">
+          <p class="hint">How images animate in each time the filters change.</p>
+          <div class="row"><label>Entry animation</label>
+            <select id="animType" onchange="sync()">
+              <option value="none">None</option><option value="fade" selected>Fade</option>
+              <option value="slide-up">Slide up</option><option value="zoom">Zoom</option>
+            </select></div>
+          <div class="row" id="rowAnimSpeed"><label>Speed</label>
+            <select id="animSpeed" onchange="sync()">
+              <option value="fast">Fast</option><option value="normal" selected>Normal</option>
+              <option value="slow">Slow</option><option value="custom">Custom…</option>
+            </select></div>
+          <div class="row" id="rowAnimDur" hidden><label>Duration (ms)</label>
+            <input type="number" id="animDuration" value="420" oninput="sync()"></div>
+          <div class="tog" id="rowAnimStagger"><label>Stagger images</label>
+            <span class="sw"><input type="checkbox" id="animStagger" checked onchange="sync()"><span></span></span></div>
+          <div class="tog"><label>Slide images to their new position</label>
+            <span class="sw"><input type="checkbox" id="layoutTransition" checked onchange="sync()"><span></span></span></div>
+          <div class="hint">Masonry and strips glide into place instead of jumping. Visitors who ask for reduced motion never see any of these.</div>
+        </div>
+      </section>
+
+      <!-- SEARCH & SORT -->
+      <section class="grp closed" data-g>
+        <button class="grp-head" onclick="tog(this)">Search &amp; Sort
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+        <div class="grp-body">
+          <div class="tog"><label>Enable search</label>
+            <span class="sw"><input type="checkbox" id="searchEnabled" onchange="sync()"><span></span></span></div>
+          <div class="row" id="rowSearchPh"><label>Search placeholder</label>
+            <input type="text" id="searchPlaceholder" value="Search" oninput="sync()"></div>
+          <div class="tog"><label>Enable sort</label>
+            <span class="sw"><input type="checkbox" id="sortEnabled" onchange="sync()"><span></span></span></div>
+          <div class="row" id="rowSortPh"><label>Sort placeholder</label>
+            <input type="text" id="sortLabel" value="Sort" oninput="sync()"></div>
+          <div class="row" id="rowSortOptions"><label>Sort options</label>
+            <div class="glist" id="sortOptions"></div>
+            <div class="hint">Shown in this order. Untick any you don't need.</div></div>
+          <div class="row" id="rowSortDefault"><label>Default sort</label>
+            <select id="sortDefault" onchange="sync()"></select></div>
+          <div class="row" id="rowSortField"><label>Field for Newest / Oldest</label>
+            <input type="text" id="sortField" value="Year" oninput="sync()">
+            <div class="hint">A caption key holding a number, usually <code class="inl">Year</code>.</div></div>
+        </div>
+      </section>
+
+      <!-- STYLING -->
+      <section class="grp closed" data-g>
+        <button class="grp-head" onclick="tog(this)">Styling
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+        <div class="grp-body">
+          <div class="note">The filter always uses the font of the gallery section it sits in — including the mobile drawer, which lives outside that section. Type never drifts from your theme.</div>
+          <div class="tog"><label><b>Follow site styles</b></label>
+            <span class="sw"><input type="checkbox" id="inhAll" checked onchange="onFollowSite()"><span></span></span></div>
+          <div class="hint">Colours are derived from the gallery section's own text colour and background. Switch off to set them yourself.</div>
+
+          <div id="customStyles" hidden style="display:grid;gap:13px">
+            <div class="tog"><label>Text colour follows site</label>
+              <span class="sw"><input type="checkbox" id="inhText" checked onchange="sync()"><span></span></span></div>
+            <div class="row" id="rowText" hidden><label>Text colour</label><input type="color" id="textColor" value="#151414" oninput="sync()"></div>
+            <div class="tog"><label>Accent follows text colour</label>
+              <span class="sw"><input type="checkbox" id="inhAccent" checked onchange="sync()"><span></span></span></div>
+            <div class="row" id="rowAccent" hidden><label>Accent</label><input type="color" id="accent" value="#111111" oninput="sync()"></div>
+            <div class="tog"><label>Borders follow text colour</label>
+              <span class="sw"><input type="checkbox" id="inhBorder" checked onchange="sync()"><span></span></span></div>
+            <div class="row" id="rowBorderOp"><label>Border strength</label>
+              <input type="number" id="borderOpacity" value="0.35" min="0.05" max="1" step="0.05" oninput="sync()"></div>
+            <div class="row" id="rowBorder" hidden><label>Border colour</label><input type="color" id="borderColor" value="#dcdcdc" oninput="sync()"></div>
+            <div class="tog"><label>Muted text follows text colour</label>
+              <span class="sw"><input type="checkbox" id="inhMuted" checked onchange="sync()"><span></span></span></div>
+            <div class="row" id="rowMuted" hidden><label>Muted colour</label><input type="color" id="mutedColor" value="#767676" oninput="sync()"></div>
+            <div class="tog"><label>Selected value colour follows accent</label>
+              <span class="sw"><input type="checkbox" id="inhActive" checked onchange="sync()"><span></span></span></div>
+            <div class="row" id="rowActive" hidden><label>Selected value colour</label><input type="color" id="activeColor" value="#c62828" oninput="sync()">
+              <div class="hint">Used for the highlighted value in text/delimiter mode.</div></div>
+            <div class="tog"><label>Dropdown &amp; drawer background follows site</label>
+              <span class="sw"><input type="checkbox" id="inhPanel" checked onchange="sync()"><span></span></span></div>
+            <div class="row" id="rowPanel" hidden><label>Dropdown &amp; drawer background</label><input type="color" id="panelBg" value="#ffffff" oninput="sync()"></div>
+            <div class="hint">Panels float over your images so they need a solid fill. Left on, the plugin reads the nearest solid background on your page.</div>
+            <div class="tog"><label>Sidebar background</label>
+              <span class="sw"><input type="checkbox" id="sidebarBgOn" onchange="sync()"><span></span></span></div>
+            <div class="row" id="rowSidebarBg" hidden><label>Sidebar background</label><input type="color" id="sidebarBg" value="#f4f4f4" oninput="sync()"></div>
+            <div class="row" id="rowSidebarPad" hidden><label>Sidebar padding (px)</label><input type="number" id="sidebarPadding" value="18" min="0" oninput="sync()"></div>
+          </div>
+
+          <div class="two">
+            <div class="row"><label>Radius (px)</label><input type="number" id="radius" value="6" oninput="sync()"></div>
+            <div class="row"><label>Font size (px)</label><input type="number" id="fontSize" value="14" oninput="sync()"></div>
+          </div>
+          <div class="two">
+            <div class="row"><label>Gap (px)</label><input type="number" id="gap" value="10" oninput="sync()"></div>
+            <div class="row"><label>Margin below (px)</label><input type="number" id="marginBottom" value="32" oninput="sync()"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TEXT -->
+      <section class="grp closed" data-g>
+        <button class="grp-head" onclick="tog(this)">Labels &amp; Text
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+        <div class="grp-body">
+          <div class="row" id="rowFbLabel"><label>Filters button</label><input type="text" id="fbLabel" value="Filters" oninput="sync()"></div>
+          <div class="row" id="rowDrawerTitle"><label>Drawer title</label><input type="text" id="txFiltersTitle" value="Filters" oninput="sync()"></div>
+          <div class="row" id="rowApply"><label>Apply button</label><input type="text" id="txApply" value="Show {n} results" oninput="sync()"></div>
+          <div class="row"><label>Clear all</label><input type="text" id="txClearAll" value="Clear all" oninput="sync()"></div>
+          <div class="row"><label>Result count</label><input type="text" id="txResultCount" value="{n} of {total}" oninput="sync()">
+            <div class="hint"><code class="inl">{n}</code> and <code class="inl">{total}</code> are replaced.</div></div>
+          <div class="row"><label>No results</label><input type="text" id="txNoResults" value="No images match these filters." oninput="sync()"></div>
+          <div class="row"><label>No results — reset button</label><input type="text" id="txNoResultsReset" value="Clear all filters" oninput="sync()"></div>
+        </div>
+      </section>
+
     </div>
-  </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="tabs">
+        <button class="tab on" onclick="setTab(0)">Preview</button>
+        <button class="tab" onclick="setTab(1)">Install code</button>
+        <button class="tab" onclick="setTab(2)">Guide</button>
+      </div>
+      <div class="topbar-right">
+        <div class="devtog">
+          <button id="devDesktop" class="on" onclick="setDev('desktop')">Desktop</button>
+          <button id="devMobile" onclick="setDev('mobile')">Mobile</button>
+        </div>
+        <button class="copy-btn" id="copyBtn" onclick="copyCode()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+          <span>Copy Code</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="pane" id="pane0">
+      <div class="urlbar" id="urlBar"></div>
+      <div class="pv-types">
+        <button data-pv="grid" class="on" onclick="setPv('grid')">Grid</button>
+        <button data-pv="masonry" onclick="setPv('masonry')">Masonry</button>
+        <button data-pv="strips" onclick="setPv('strips')">Strips</button>
+      </div>
+      <p class="pv-note">Live preview on the real captions from the SDL test gallery — six images with a nested tag, a missing Year, a missing full stop and a comma inside a Location. Every control on the left is reflected here, and the filters really work.</p>
+      <div class="pv-wrap" id="pvWrap"><div class="pv-scroll" id="preview"></div></div>
+    </div>
+
+    <div class="pane" id="pane1" hidden><pre id="code"></pre></div>
+
+    <div class="pane" id="pane2" hidden>
+      <div class="steps">
+        <h3>1 — Turn captions on (required)</h3>
+        <ol>
+          <li>Edit the page → click the gallery section → <strong>Edit Section → Design</strong>.</li>
+          <li>Set <strong>Captions</strong> to show. Any caption style works.</li>
+          <li>Repeat for every gallery you want to filter.</li>
+        </ol>
+        <p class="hint" style="margin:10px 0 0">A gallery section is not a collection, so Squarespace publishes no JSON for it — <code class="inl">?format=json</code> returns rendered HTML with no image data. The caption in the page is the only source, and Squarespace leaves it out entirely when captions are off. The plugin hides them again, so this changes nothing for visitors.</p>
+      </div>
+      <div class="steps">
+        <h3>2 — Write the metadata into each caption</h3>
+        <p style="margin:0 0 8px">Click an image → <strong>Edit</strong> → put your filter data in the <strong>caption</strong> field.</p>
+        <pre style="padding:12px;font-size:12px">Tags: Interiors &gt; Residential, Branding. Year: 2025. Location: Madrid. Author: Sam.</pre>
+        <table>
+          <tr><th>Rule</th><th>Detail</th></tr>
+          <tr><td><code class="inl">Key: value.</code></td><td>Each pair ends with <code class="inl">.</code> <code class="inl">;</code> <code class="inl">|</code> or a new line. The <em>last</em> pair may end with nothing — a missing final full stop is handled.</td></tr>
+          <tr><td>Several values</td><td>Comma separated: <code class="inl">Tags: Branding, Design.</code></td></tr>
+          <tr><td>Sub-categories</td><td><code class="inl">Parent &gt; Child</code> registers both. Selecting <em>Interiors</em> matches everything under it; <em>Residential</em> narrows to that child.</td></tr>
+          <tr><td><code class="inl">Location</code></td><td>Never comma-split, so <code class="inl">Location: London, UK</code> stays one place.</td></tr>
+          <tr><td>Your own keys</td><td>Any key works. <code class="inl">Author: Sam.</code> becomes an Author filter with no configuration.</td></tr>
+          <tr><td>Missing keys</td><td>Fine — an image with no Year simply never matches a Year filter.</td></tr>
+          <tr><td>Plain prose</td><td>Anything that isn't a <code class="inl">Key: value</code> pair stays as the visible caption in Clean mode.</td></tr>
+        </table>
+      </div>
+      <div class="steps">
+        <h3>3 — Where the code goes</h3>
+        <ol>
+          <li>Copy the code with the button in the header.</li>
+          <li>In Squarespace, open the page → <strong>Page Settings → Advanced → Page Header Code Injection</strong>, and paste it there. That loads the filter only on this page and stops the raw caption text flashing before the plugin hides it.</li>
+          <li>Or, for every page, use <code class="inl">Settings → Advanced → Code Injection → Footer</code> instead.</li>
+          <li>Save and open the page.</li>
+        </ol>
+      </div>
+      <div class="steps">
+        <h3>Good to know</h3>
+        <ol>
+          <li><strong>Filter groups are discovered, not listed.</strong> Add a new key to a caption and it becomes a filter on its own.</li>
+          <li><strong>Grid, Masonry and Strips are supported.</strong> Slideshow, Reel and Stacked are carousels and are skipped with a console notice.</li>
+          <li><strong>Masonry and strips are re-laid-out by the plugin.</strong> Squarespace positions them once and never recomputes — so filtering them natively would leave holes. A side effect is that they now reflow on window resize, which they don't do natively.</li>
+          <li>Images are never re-created — they're shown and hidden in place, so the Gallery Lightbox and other plugins keep working.</li>
+          <li>Choices <em>within</em> a group widen results; choices <em>across</em> groups narrow them.</li>
+          <li>Filter state uses an <code class="inl">f_</code> prefix so links are shareable and never collide with Squarespace's own <code class="inl">?tag=</code>, which it consumes server-side.</li>
+          <li>Each gallery on a page filters independently and gets its own URL scope (<code class="inl">f_s1_</code>, <code class="inl">f_s2_</code>).</li>
+        </ol>
+      </div>
+    </div>
+  </main>
 </div>
 
 <script>
-/* ------------------------------------------------------------------ */
-/*  Sample data — the real captions from the SDL test gallery, so the   */
-/*  preview exercises the same edge cases the plugin ships against:     */
-/*  a nested tag, a missing Year, a missing trailing period, and a      */
-/*  Location containing a comma.                                        */
-/* ------------------------------------------------------------------ */
-var SAMPLE = [
-  { cap:'Tags: Branding, Design. Year: 2024. Location: London, UK. Author: Sam.', ratio:1.43 },
-  { cap:'Tags: Design, Development. Year: 2025. Location: Chicago. Author: Emily.', ratio:0.78 },
-  { cap:'Tags: Development. Year: 2024. Location: California. Author: Sam', ratio:1.43 },
-  { cap:'Tags: Branding. Year: 2024. Location: Paris. Author: Emily.', ratio:1.0 },
-  { cap:'Tags: Interiors > Residential, Interiors > Hospitality, Branding. Location: Madrid.', ratio:1.43 },
-  { cap:'Tags: Interiors > Residential, Interiors > Hotel, SEO. Location: Madrid. Year: 2025', ratio:0.78 }
+/* ================= sample data — the real test-gallery captions ================= */
+const SAMPLE=[
+  {cap:'Tags: Branding, Design. Year: 2024. Location: London, UK. Author: Sam.', ratio:1.43},
+  {cap:'Tags: Design, Development. Year: 2025. Location: Chicago. Author: Emily.', ratio:0.78},
+  {cap:'Tags: Development. Year: 2024. Location: California. Author: Sam', ratio:1.43},
+  {cap:'Tags: Branding. Year: 2024. Location: Paris. Author: Emily.', ratio:1.0},
+  {cap:'Tags: Interiors > Residential, Interiors > Hospitality, Branding. Location: Madrid.', ratio:1.43},
+  {cap:'Tags: Interiors > Residential, Interiors > Hotel, SEO. Location: Madrid. Year: 2025', ratio:0.78}
 ];
 
-/* Parser kept byte-compatible with galleryFilter.js */
-var META_RE = /([A-Za-z0-9 _-]+):\s*([^|;.\n]+)(?=[|;.\n]|$)/g;
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const val=id=>{const e=document.getElementById(id);return e?e.value:'';};
+const num=id=>{const e=document.getElementById(id);return e?parseFloat(e.value)||0:0;};
+const chk=id=>{const e=document.getElementById(id);return e?e.checked:false;};
+
+/* ================= parser — byte-compatible with galleryFilter.js ================= */
+const META_RE=/([A-Za-z0-9 _-]+):\s*([^|;.\n]+)(?=[|;.\n]|$)/g;
 function normalizeKey(k){
-  var l=String(k).toLowerCase().trim();
+  const l=String(k).toLowerCase().trim();
   if(l==='tag'||l==='tags'||l==='filter'||l==='filters')return 'Tags';
   if(l==='category'||l==='categories')return 'Categories';
   if(l==='loc'||l==='location'||l==='locations')return 'Location';
   if(l==='year'||l==='years'||l==='date')return 'Year';
-  return l.replace(/\b\w/g,function(c){return c.toUpperCase();});
+  return l.replace(/\b\w/g,c=>c.toUpperCase());
+}
+function tagSplit(){
+  const m=val('tagDelimiter');
+  return m==='pipe'?/\|/:m==='slash'?/\//:m==='semicolon'?/;/:/,/;
 }
 function parseCaption(raw){
-  raw=String(raw||'').trim(); var fields={}, order=[]; META_RE.lastIndex=0; var m, ms=[];
-  while((m=META_RE.exec(raw))!==null) ms.push(m);
-  ms.forEach(function(mm){
-    var key=normalizeKey(mm[1]), vs=String(mm[2]).trim(); if(!vs)return;
-    var values = key==='Location' ? [vs] : vs.split(CFG.tagDelimiter==='pipe'?/\|/:CFG.tagDelimiter==='slash'?/\//:CFG.tagDelimiter==='semicolon'?/;/:/,/);
-    if(!fields[key]){fields[key]=[];order.push(key);}
-    values.map(function(v){return v.trim();}).filter(Boolean).forEach(function(val){
-      var p=val.split('>').map(function(x){return x.trim();}).filter(Boolean);
+  raw=String(raw||'').trim();
+  const fields={};META_RE.lastIndex=0;let m;const ms=[];
+  while((m=META_RE.exec(raw))!==null)ms.push(m);
+  ms.forEach(mm=>{
+    const key=normalizeKey(mm[1]),vs=String(mm[2]).trim();
+    if(!vs)return;
+    const values=key==='Location'?[vs]:vs.split(tagSplit());
+    if(!fields[key])fields[key]=[];
+    values.map(v=>v.trim()).filter(Boolean).forEach(v=>{
+      const p=v.split('>').map(x=>x.trim()).filter(Boolean);
       if(p.length>1){
-        var parent=p[0], child=p.slice(0,2).join(' > ');
-        if(fields[key].indexOf(parent)===-1)fields[key].push(parent);
-        if(fields[key].indexOf(child)===-1)fields[key].push(child);
-      } else if(fields[key].indexOf(val)===-1) fields[key].push(val);
+        const parent=p[0],child=p.slice(0,2).join(' > ');
+        if(!fields[key].includes(parent))fields[key].push(parent);
+        if(!fields[key].includes(child))fields[key].push(child);
+      } else if(!fields[key].includes(v))fields[key].push(v);
     });
   });
-  var excerpt=raw.replace(META_RE,'').replace(/[.\n]+/g,'. ').replace(/\s+\./g,'.').replace(/^[.\s]+/,'').replace(/\s{2,}/g,' ').trim();
-  return {fields:fields, order:order, excerpt:excerpt};
+  const excerpt=raw.replace(META_RE,'').replace(/[.\n]+/g,'. ').replace(/\s+\./g,'.')
+    .replace(/^[.\s]+/,'').replace(/\s{2,}/g,' ').trim();
+  return {fields,excerpt};
 }
 
-/* ------------------------------------------------------------------ */
-/*  Config state                                                       */
-/* ------------------------------------------------------------------ */
-var CFG = {
-  sections:'all',
-  captionMode:'clean', captionFields:[], captionDelimiter:' / ', captionShowKeys:false,
-  tagDelimiter:'comma',
-  groupSettings:{},           // field -> {enabled,label,ui,multiSelect,showCounts,allText}
-  groupOrder:[],
-  layout:'top', align:'left',
-  sidebarWidth:25, sidebarWidthUnit:'%', stickySidebar:false, stickyToolbar:false, stickyTopOffset:20,
-  mobileBreakpoint:1024,
-  fbDesktop:false, fbMobile:true, fbSide:'left',
-  showAllOption:true, showCounts:false, disableZeroOptions:true, showResultCount:false, showClearAll:true,
-  searchEnabled:false, searchPlaceholder:'Search',
-  sortEnabled:false, sortOptions:['gallery','az','za'], sortDefault:'gallery',
-  animType:'fade', animSpeed:'normal', animStagger:40, layoutTransition:true,
-  urlSync:true, urlParamPrefix:'f_', scrollOnChange:false,
-  inheritStyles:true,
-  textColor:'', accent:'', borderColor:'', mutedColor:'', panelBg:'', sidebarBg:'',
-  borderOpacity:0.35, radius:6, pillRadius:999, fontSize:14, gap:10, marginBottom:32,
-  txtAll:'All', txtFilter:'Filters', txtDrawer:'Filters', txtApply:'Show results',
-  txtClear:'Clear all', txtCount:'{n} of {total}', txtNo:'No images match these filters.', txtSort:'Sort'
-};
+/* ================= discovery ================= */
+let groups=[];            // [{field,on,label,ui,multiSelect,showCounts,collapsed,allText}]
+let display={container:'dropdown',optionStyle:'checkbox',showLabel:true,pillRadius:999,delimiter:'pipe'};
+let dev='desktop';
+let pvType='grid';
+let pv={active:{},query:'',sort:'',drawerOpen:false,openDd:null};
 
-var STATE = { tab:'setup', pv:'grid', active:{}, pvOrder:null };
+const SORT_ALL=[{k:'gallery',label:'Gallery order'},{k:'az',label:'A–Z'},{k:'za',label:'Z–A'},
+  {k:'newest',label:'Newest'},{k:'oldest',label:'Oldest'},{k:'random',label:'Random'}];
+let sortOn={gallery:true,az:true,za:true,newest:false,oldest:false,random:false};
+const sortKeys=()=>SORT_ALL.filter(s=>sortOn[s.k]).map(s=>s.k);
+const sortLabelOf=k=>(SORT_ALL.find(s=>s.k===k)||{}).label||k;
 
-/* discovered fields from the sample */
 function discover(){
-  var order=[], by={};
-  SAMPLE.forEach(function(s){
-    var p=parseCaption(s.cap); s._p=p;
-    Object.keys(p.fields).forEach(function(k){
+  const order=[],by={};
+  SAMPLE.forEach(s=>{
+    s._p=parseCaption(s.cap);
+    Object.keys(s._p.fields).forEach(k=>{
       if(!by[k]){by[k]=[];order.push(k);}
-      p.fields[k].forEach(function(v){ if(by[k].indexOf(v)===-1) by[k].push(v); });
+      s._p.fields[k].forEach(v=>{if(!by[k].includes(v))by[k].push(v);});
     });
   });
-  Object.keys(by).forEach(function(k){
-    var vals=by[k];
-    if(k==='Year'||vals.every(function(v){return /^\d{3,4}$/.test(v);}))
-      vals.sort(function(a,b){return parseFloat(b)-parseFloat(a);});
-    else vals.sort(function(a,b){
-      var ap=a.split(' > '),bp=b.split(' > ');
-      var c=ap[0].localeCompare(bp[0]); return c!==0?c:(ap[1]||'').localeCompare(bp[1]||'');
+  Object.keys(by).forEach(k=>{
+    const vals=by[k];
+    if(k==='Year'||vals.every(v=>/^\d{3,4}$/.test(v)))vals.sort((a,b)=>parseFloat(b)-parseFloat(a));
+    else vals.sort((a,b)=>{
+      const ap=a.split(' > '),bp=b.split(' > ');
+      const c=ap[0].localeCompare(bp[0]);return c!==0?c:(ap[1]||'').localeCompare(bp[1]||'');
     });
   });
-  return {order:order, by:by};
+  return {order,by};
 }
 
-function gset(field){
-  if(!CFG.groupSettings[field]) CFG.groupSettings[field]={};
-  var g=CFG.groupSettings[field];
-  if(g.enabled===undefined)g.enabled=true;
-  if(g.label===undefined)g.label='';
-  if(g.ui===undefined)g.ui='pills';
-  if(g.multiSelect===undefined)g.multiSelect=true;
-  if(g.showCounts===undefined)g.showCounts=false;
-  if(g.allText===undefined)g.allText='';
-  return g;
-}
-
-/* ------------------------------------------------------------------ */
-/*  Small builders                                                     */
-/* ------------------------------------------------------------------ */
-function h(tag,attrs,kids){
-  var n=document.createElement(tag);
-  if(attrs) Object.keys(attrs).forEach(function(k){
-    if(k==='class')n.className=attrs[k];
-    else if(k==='html')n.innerHTML=attrs[k];
-    else if(k==='text')n.textContent=attrs[k];
-    else if(k.indexOf('on')===0)n.addEventListener(k.slice(2),attrs[k]);
-    else n.setAttribute(k,attrs[k]);
+/* keep `groups` in step with whatever the captions currently yield */
+function syncGroups(){
+  const f=discover();
+  const seen={};
+  groups=groups.filter(g=>f.order.includes(g.field));
+  groups.forEach(g=>seen[g.field]=true);
+  f.order.forEach(field=>{
+    if(seen[field])return;
+    groups.push({field,on:true,label:'',ui:'',multiSelect:true,showCounts:false,collapsed:false,allText:''});
   });
-  (kids||[]).forEach(function(c){ if(c) n.appendChild(c); });
-  return n;
+  return f;
 }
-function card(title,rows){ return h('div',{class:'card'},[h('h3',{text:title})].concat(rows)); }
-function row(labelText,control,hint){
-  var l=h('label',{},[document.createTextNode(labelText)]);
-  if(hint) l.appendChild(h('span',{class:'hint',text:hint}));
-  return h('div',{class:'row'},[l,control]);
-}
-function toggle(get,set){
-  var i=h('input',{type:'checkbox'});
-  i.checked=!!get();
-  i.addEventListener('change',function(){set(i.checked);render();});
-  return h('span',{class:'sw'},[i,h('i')]);
-}
-function select(opts,get,set){
-  var s=h('select');
-  opts.forEach(function(o){
-    var v=Array.isArray(o)?o[0]:o, t=Array.isArray(o)?o[1]:o;
-    var op=h('option',{value:v,text:t});
-    if(String(get())===String(v))op.selected=true;
-    s.appendChild(op);
+const onGroups=()=>groups.filter(g=>g.on);
+const gLabel=g=>g.label||g.field;
+const gUi=g=>g.ui||({checkbox:'checkbox',buttons:'pills',text:'text'}[display.optionStyle])||'checkbox';
+
+/* ================= sidebar rendering ================= */
+function tog(b){b.parentElement.classList.toggle('closed');}
+
+function renderGroups(){
+  const f=syncGroups();
+  const host=document.getElementById('groupList');host.innerHTML='';
+  groups.forEach((g,i)=>{
+    const d=document.createElement('div');
+    d.className='gitem '+(g.on?'on':'off');
+    const allRow=(chk('showAllOption')&&chk('uniqueAllText'))
+      ? `<div class="row"><label>“All” text</label>
+           <input type="text" value="${esc(g.allText||'')}" placeholder="${esc(val('allText')||'All')}"
+             oninput="setGroupQuiet(${i},'allText',this.value)"></div>` : '';
+    const body=g.on?`<div class="gitem-body">
+        <div class="row"><label>Label shown to visitors</label>
+          <input type="text" value="${esc(g.label)}" placeholder="${esc(g.field)}" oninput="setGroupQuiet(${i},'label',this.value)"></div>
+        <div class="row"><label>Option style</label>
+          <select onchange="setGroup(${i},'ui',this.value)">
+            <option value=""${!g.ui?' selected':''}>Use the shared setting</option>
+            <option value="checkbox"${g.ui==='checkbox'?' selected':''}>Checkboxes</option>
+            <option value="pills"${g.ui==='pills'?' selected':''}>Buttons</option>
+            <option value="chips"${g.ui==='chips'?' selected':''}>Chips</option>
+            <option value="text"${g.ui==='text'?' selected':''}>Text</option>
+          </select></div>
+        <div class="tog"><label>Allow multiple selections</label>
+          <span class="sw"><input type="checkbox" ${g.multiSelect?'checked':''} onchange="setGroup(${i},'multiSelect',this.checked)"><span></span></span></div>
+        <div class="tog"><label>Show counts</label>
+          <span class="sw"><input type="checkbox" ${g.showCounts?'checked':''} onchange="setGroup(${i},'showCounts',this.checked)"><span></span></span></div>
+        <div class="tog"><label>Start collapsed</label>
+          <span class="sw"><input type="checkbox" ${g.collapsed?'checked':''} onchange="setGroup(${i},'collapsed',this.checked)"><span></span></span></div>
+        <div class="hint">Applies in the sidebar and drawer, where groups are accordions.</div>
+        ${allRow}</div>`:'';
+    d.innerHTML=`
+      <div class="gitem-head">
+        <button class="arrow" title="Move up" onclick="moveGroup(${i},-1)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+        <button class="arrow" title="Move down" onclick="moveGroup(${i},1)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+        <span class="nm">${esc(g.field)}</span>
+        <span class="vals">${(f.by[g.field]||[]).length} values</span>
+        <span class="sw"><input type="checkbox" ${g.on?'checked':''} onchange="setGroup(${i},'on',this.checked)"><span></span></span>
+      </div>${body}`;
+    host.appendChild(d);
   });
-  s.addEventListener('change',function(){set(s.value);render();});
-  return s;
 }
-function textIn(get,set,ph,wide){
-  var i=h('input',{type:'text',value:get()||'',placeholder:ph||''});
-  if(wide)i.style.width='260px';
-  i.addEventListener('input',function(){set(i.value);renderPreview();renderCode();});
-  return i;
-}
-function numIn(get,set,min,max){
-  var i=h('input',{type:'number',value:get()});
-  if(min!=null)i.min=min; if(max!=null)i.max=max;
-  i.addEventListener('input',function(){set(parseFloat(i.value));render();});
-  return i;
-}
-function colorIn(get,set){
-  var wrap=h('span',{},[]);
-  var c=h('input',{type:'color',value:get()||'#000000'});
-  var t=h('input',{type:'text',value:get()||'',placeholder:'inherit'});
-  t.style.width='110px'; t.style.marginLeft='8px';
-  c.addEventListener('input',function(){set(c.value);t.value=c.value;renderPreview();renderCode();});
-  t.addEventListener('input',function(){set(t.value);renderPreview();renderCode();});
-  wrap.appendChild(c); wrap.appendChild(t);
-  return wrap;
+function setGroup(i,k,v){groups[i][k]=v;renderGroups();sync();}
+function setGroupQuiet(i,k,v){groups[i][k]=v;sync();}
+function moveGroup(i,d){
+  const j=i+d;if(j<0||j>=groups.length)return;
+  const t=groups[i];groups[i]=groups[j];groups[j]=t;
+  renderGroups();sync();
 }
 
-/* ------------------------------------------------------------------ */
-/*  Panes                                                              */
-/* ------------------------------------------------------------------ */
-var PANES = {};
+function setDisplay(k,v){display[k]=v;renderDisplay();sync();}
+function setDisplayQuiet(k,v){display[k]=v;sync();}
+function renderDisplay(){
+  const host=document.getElementById('displayBody');
+  const isText=display.optionStyle==='text';
+  const isBtn=display.optionStyle==='buttons';
+  const inline=display.container==='inline';
+  const KNOWN=['pipe','space','comma','slash','dot','dash'];
+  const custom=!KNOWN.includes(display.delimiter);
+  host.innerHTML=`
+    <div class="row"><label>Where the options live</label>
+      <select onchange="setDisplay('container',this.value)">
+        <option value="dropdown"${!inline?' selected':''}>In a dropdown</option>
+        <option value="inline"${inline?' selected':''}>Inline in the toolbar</option>
+      </select>
+      <div class="hint">The sidebar and drawer always use accordions — a dropdown in a narrow column would open over its own siblings.</div></div>
+    <div class="row"><label>How each option looks</label>
+      <select onchange="setDisplay('optionStyle',this.value)">
+        <option value="checkbox"${display.optionStyle==='checkbox'?' selected':''}>Checkboxes</option>
+        <option value="buttons"${isBtn?' selected':''}>Buttons</option>
+        <option value="text"${isText?' selected':''}>Text</option>
+      </select></div>
+    ${inline?`<div class="tog"><label>Show the group label</label>
+      <span class="sw"><input type="checkbox" ${display.showLabel!==false?'checked':''} onchange="setDisplay('showLabel',this.checked)"><span></span></span></div>`:''}
+    ${isBtn?`<div class="row"><label>Corner radius (px)</label>
+      <input type="number" min="0" max="999" value="${display.pillRadius}" oninput="setDisplayQuiet('pillRadius',+this.value)">
+      <div class="hint">0 for square, 999 for a full pill.</div></div>`:''}
+    ${isText?`<div class="row"><label>Separator</label>
+      <select onchange="setDisplay('delimiter',this.value)">
+        ${KNOWN.map(k=>`<option value="${k}"${display.delimiter===k?' selected':''}>${
+          {pipe:'Pipe |',space:'Space',comma:'Comma ,',slash:'Slash /',dot:'Dot ·',dash:'Dash –'}[k]}</option>`).join('')}
+        <option value="__custom"${custom?' selected':''}>Custom…</option>
+      </select></div>
+    ${custom?`<div class="row"><label>Custom separator</label>
+      <input type="text" value="${esc(display.delimiter==='__custom'?'':display.delimiter)}" oninput="setDisplayQuiet('delimiter',this.value)"></div>`:''}`:''}
+    <div class="hint">Applies to every filter group unless one overrides it under <b>Filter Groups</b>.</div>`;
+}
 
-PANES.setup = function(){
-  var f=discover();
-  return [
-    h('div',{class:'note'},[
-      h('h4',{text:'Captions must be turned ON in Squarespace'}),
-      h('p',{html:'A gallery section is not a collection — Squarespace publishes <strong>no JSON</strong> for it, so the image caption in the page is the only place this plugin can read from. When captions are switched off, Squarespace leaves them out of the page entirely and there is nothing to filter on.'}),
-      h('p',{html:'Turn captions <strong>on</strong> for the section, then let the plugin hide them again. With the default <code>captionMode: \'clean\'</code> your visitors never see the raw <code>Tags: …</code> text — it is removed before the page paints.'})
-    ]),
-    card('Step by step', [h('ol',{class:'steps'},[
-      h('li',{},[h('strong',{text:'Turn captions on'}),
-        h('p',{html:'Edit the page → click the gallery section → <strong>Edit Section</strong> → <strong>Design</strong> → set <strong>Captions</strong> to show (any style — "Below image" is fine). Do this for every gallery you want to filter.'})]),
-      h('li',{},[h('strong',{text:'Write the metadata into each image caption'}),
-        h('p',{html:'Click an image → <strong>Edit</strong> → put your filter data in the <strong>caption</strong> field, as <code>Key: value.</code> pairs separated by full stops.'})]),
-      h('li',{},[h('strong',{text:'Build your config below'}),
-        h('p',{text:'The filter groups are discovered from whatever keys you used — you do not have to declare them.'})]),
-      h('li',{},[h('strong',{text:'Paste the install code'}),
-        h('p',{html:'Squarespace → <strong>Settings → Advanced → Code Injection → Footer</strong>, or the page\'s own Page Header injection if you only want it on one page.'})])
-    ])]),
-    card('Caption format', [
-      h('pre',{html:'<span class="c">// one image\'s caption</span>\nTags: Interiors &gt; Residential, Branding. Year: 2025. Location: Madrid. Author: Sam.'}),
-      h('table',{class:'ex'},[
-        h('tr',{},[h('th',{text:'Rule'}),h('th',{text:'Detail'})]),
-        h('tr',{},[h('td',{html:'<code>Key: value.</code>'}),h('td',{html:'Each pair ends with a full stop, semicolon, pipe or a new line. The last pair may end with nothing at all.'})]),
-        h('tr',{},[h('td',{html:'Multiple values'}),h('td',{html:'Separate with commas — <code>Tags: Branding, Design.</code>'})]),
-        h('tr',{},[h('td',{html:'Sub-categories'}),h('td',{html:'<code>Parent &gt; Child</code>. Selecting <em>Interiors</em> matches every image under it; <em>Residential</em> narrows to that child.'})]),
-        h('tr',{},[h('td',{html:'<code>Location</code>'}),h('td',{html:'Never split on commas, so <code>Location: London, UK</code> stays one place.'})]),
-        h('tr',{},[h('td',{html:'Your own keys'}),h('td',{html:'Any key works. <code>Author: Sam.</code> becomes an Author filter with no configuration.'})]),
-        h('tr',{},[h('td',{html:'Plain text'}),h('td',{html:'Anything that is not a <code>Key: value</code> pair is kept as the visible caption in <em>Clean</em> mode.'})])
-      ])
-    ]),
-    card('Detected from the sample captions', [
-      h('div',{},f.order.map(function(k){
-        return h('div',{class:'row'},[
-          h('label',{},[document.createTextNode(k),h('span',{class:'hint',text:f.by[k].join(' · ')})]),
-          h('span',{style:'color:var(--ok);font-size:12px',text:f.by[k].length+' values'})
-        ]);
-      }))
-    ]),
-    card('Supported gallery types',[
-      h('table',{class:'ex'},[
-        h('tr',{},[h('th',{text:'Type'}),h('th',{text:'Supported'}),h('th',{text:'Notes'})]),
-        h('tr',{},[h('td',{text:'Grid'}),h('td',{text:'Yes'}),h('td',{text:'Native CSS grid — reflows on its own.'})]),
-        h('tr',{},[h('td',{text:'Masonry'}),h('td',{text:'Yes'}),h('td',{text:'The plugin re-packs the columns; Squarespace never does.'})]),
-        h('tr',{},[h('td',{text:'Strips'}),h('td',{text:'Yes'}),h('td',{text:'The plugin re-justifies the rows.'})]),
-        h('tr',{},[h('td',{text:'Slideshow / Reel / Stacked'}),h('td',{text:'No'}),h('td',{text:'Carousels — skipped with a console notice.'})])
-      ])
-    ])
-  ];
-};
+function renderSortOptions(){
+  document.getElementById('sortOptions').innerHTML=SORT_ALL.map(s=>
+    `<label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:2px 0">
+      <input type="checkbox" ${sortOn[s.k]?'checked':''} onchange="toggleSort('${s.k}',this.checked)">${s.label}</label>`).join('');
+  const sel=document.getElementById('sortDefault');
+  const keys=sortKeys();
+  const want=keys.includes(sel.value)?sel.value:(keys[0]||'gallery');
+  sel.innerHTML=keys.map(k=>`<option value="${k}"${k===want?' selected':''}>${sortLabelOf(k)}</option>`).join('')
+    ||`<option value="gallery">Gallery order</option>`;
+  if(!keys.includes(pv.sort))pv.sort=want;
+}
+function toggleSort(k,on){
+  sortOn[k]=on;
+  if(!sortKeys().length)sortOn[k]=true;
+  renderSortOptions();sync();
+}
 
-PANES.sections = function(){
-  return [
-    card('Which galleries',[
-      row('Sections', textIn(function(){return CFG.sections==='all'?'':(Array.isArray(CFG.sections)?CFG.sections.join(', '):CFG.sections);},
-        function(v){ v=v.trim(); CFG.sections = v? v.split(',').map(function(s){return s.trim();}).filter(Boolean) : 'all'; },
-        'all gallery sections', true),
-        'Leave blank for every gallery section on the page. Otherwise paste Section IDs, comma separated.')
-    ]),
-    card('Caption handling',[
-      row('Caption mode', select([['clean','Clean — strip the metadata, keep any prose'],['meta','Meta — rebuild from chosen fields'],['raw','Raw — leave Squarespace\'s caption alone'],['hide','Hide — no caption at all']],
-        function(){return CFG.captionMode;}, function(v){CFG.captionMode=v;}),
-        'Clean is the default: visitors never see the "Tags: …" text.'),
-      CFG.captionMode==='meta' ? row('Fields to show', textIn(function(){return CFG.captionFields.join(', ');},
-        function(v){CFG.captionFields=v.split(',').map(function(s){return s.trim();}).filter(Boolean);}, 'all fields', true),
-        'Comma separated, e.g. Tags, Year. Blank shows every field.') : null,
-      CFG.captionMode==='meta' ? row('Separator', textIn(function(){return CFG.captionDelimiter;},function(v){CFG.captionDelimiter=v;},' / ')) : null,
-      CFG.captionMode==='meta' ? row('Show the key names', toggle(function(){return CFG.captionShowKeys;},function(v){CFG.captionShowKeys=v;}),
-        'On: "Tags: Branding, Design". Off: "Branding, Design".') : null,
-      row('Value separator in captions', select([['comma','Comma  ,'],['pipe','Pipe  |'],['slash','Slash  /'],['semicolon','Semicolon  ;']],
-        function(){return CFG.tagDelimiter;},function(v){CFG.tagDelimiter=v;}),
-        'How several values are separated inside one key. Location is never split.')
-    ])
-  ];
-};
-
-PANES.groups = function(){
-  var f=discover();
-  var cards = f.order.map(function(field){
-    var g=gset(field);
-    var head=h('div',{class:'gc-head'},[
-      h('strong',{text:field}),
-      h('span',{style:'font-size:12px;color:var(--muted)',text:f.by[field].length+' values'}),
-      toggle(function(){return g.enabled;},function(v){g.enabled=v;})
-    ]);
-    var body = g.enabled ? h('div',{},[
-      row('Label shown to visitors', textIn(function(){return g.label;},function(v){g.label=v;},field)),
-      row('Style', select([['pills','Pills'],['chips','Chips'],['text','Text with separator'],['checkbox','Checkboxes']],
-        function(){return g.ui;},function(v){g.ui=v;})),
-      row('Allow several at once', toggle(function(){return g.multiSelect;},function(v){g.multiSelect=v;})),
-      row('Show counts', toggle(function(){return g.showCounts;},function(v){g.showCounts=v;})),
-      CFG.showAllOption ? row('"All" wording', textIn(function(){return g.allText;},function(v){g.allText=v;},CFG.txtAll)) : null
-    ]) : null;
-    return h('div',{class:'group-card'},[head,body]);
+function onFollowSite(){
+  const follow=chk('inhAll');
+  ['inhText','inhAccent','inhBorder','inhMuted','inhActive','inhPanel'].forEach(id=>{
+    document.getElementById(id).checked=follow;
   });
-
-  return [
-    card('Global',[
-      row('Show an "All" option', toggle(function(){return CFG.showAllOption;},function(v){CFG.showAllOption=v;}),
-        'A leading entry that clears its own group.'),
-      row('Dim options with no results', toggle(function(){return CFG.disableZeroOptions;},function(v){CFG.disableZeroOptions=v;})),
-      row('Show a result count', toggle(function(){return CFG.showResultCount;},function(v){CFG.showResultCount=v;})),
-      row('Show "Clear all"', toggle(function(){return CFG.showClearAll;},function(v){CFG.showClearAll=v;}))
-    ]),
-    card('Filter groups', cards.concat([
-      h('p',{style:'font-size:12px;color:var(--muted);margin:8px 0 0',
-        text:'Groups are discovered from your captions. Add a new key to a caption and it appears here — no config change needed.'})
-    ]))
-  ];
-};
-
-PANES.layout = function(){
-  return [
-    card('Layout',[
-      row('Placement', select([['top','Top bar'],['sidebar','Left sidebar']],function(){return CFG.layout;},function(v){CFG.layout=v;})),
-      CFG.layout==='top'? row('Alignment', select([['left','Left'],['center','Centre'],['right','Right']],function(){return CFG.align;},function(v){CFG.align=v;})):null,
-      CFG.layout==='top'? row('Stick to the top on scroll', toggle(function(){return CFG.stickyToolbar;},function(v){CFG.stickyToolbar=v;})):null,
-      CFG.layout==='sidebar'? row('Sidebar width', h('span',{},[numIn(function(){return CFG.sidebarWidth;},function(v){CFG.sidebarWidth=v;},5,60),
-        select([['%','%'],['px','px']],function(){return CFG.sidebarWidthUnit;},function(v){CFG.sidebarWidthUnit=v;})])):null,
-      CFG.layout==='sidebar'? row('Sticky sidebar', toggle(function(){return CFG.stickySidebar;},function(v){CFG.stickySidebar=v;})):null,
-      (CFG.stickyToolbar||CFG.stickySidebar)? row('Sticky offset (px)', numIn(function(){return CFG.stickyTopOffset;},function(v){CFG.stickyTopOffset=v;},0,300)):null
-    ]),
-    card('Mobile',[
-      row('Mobile breakpoint (px)', numIn(function(){return CFG.mobileBreakpoint;},function(v){CFG.mobileBreakpoint=v;},320,1600)),
-      row('Filter button on desktop', toggle(function(){return CFG.fbDesktop;},function(v){CFG.fbDesktop=v;}),'Opens a drawer instead of showing the filters inline.'),
-      row('Filter button on mobile', toggle(function(){return CFG.fbMobile;},function(v){CFG.fbMobile=v;}),'Off means the filters render inline on mobile too — they can never become unreachable.'),
-      (CFG.fbDesktop||CFG.fbMobile)? row('Drawer slides from', select([['left','Left'],['right','Right']],function(){return CFG.fbSide;},function(v){CFG.fbSide=v;})):null
-    ]),
-    card('Motion',[
-      row('Entry animation', select([['none','None'],['fade','Fade']],function(){return CFG.animType;},function(v){CFG.animType=v;})),
-      CFG.animType!=='none'? row('Speed', select([['fast','Fast'],['normal','Normal'],['slow','Slow']],function(){return CFG.animSpeed;},function(v){CFG.animSpeed=v;})):null,
-      CFG.animType!=='none'? row('Stagger (ms)', numIn(function(){return CFG.animStagger;},function(v){CFG.animStagger=v;},0,300)):null,
-      row('Animate images into position', toggle(function(){return CFG.layoutTransition;},function(v){CFG.layoutTransition=v;}),
-        'Masonry and strips slide to their new spot instead of jumping.')
-    ]),
-    card('URL',[
-      row('Put filters in the URL', toggle(function(){return CFG.urlSync;},function(v){CFG.urlSync=v;}),'Makes a filtered view shareable.'),
-      CFG.urlSync? row('Parameter prefix', textIn(function(){return CFG.urlParamPrefix;},function(v){CFG.urlParamPrefix=v;},'f_'),
-        'Do not remove this. Squarespace consumes bare "category" and "tag" parameters server-side and would render an empty gallery.'):null,
-      row('Scroll to the gallery on change', toggle(function(){return CFG.scrollOnChange;},function(v){CFG.scrollOnChange=v;}))
-    ])
-  ];
-};
-
-PANES.searchsort = function(){
-  var ALL=[['gallery','Gallery order'],['az','A–Z'],['za','Z–A'],['newest','Newest first'],['oldest','Oldest first'],['random','Random']];
-  return [
-    card('Search',[
-      row('Enable search', toggle(function(){return CFG.searchEnabled;},function(v){CFG.searchEnabled=v;})),
-      CFG.searchEnabled? row('Placeholder', textIn(function(){return CFG.searchPlaceholder;},function(v){CFG.searchPlaceholder=v;},'Search')):null
-    ]),
-    card('Sort',[
-      row('Enable sort', toggle(function(){return CFG.sortEnabled;},function(v){CFG.sortEnabled=v;})),
-      CFG.sortEnabled? h('div',{},ALL.map(function(o){
-        var on=CFG.sortOptions.indexOf(o[0])!==-1;
-        return row(o[1], toggle(function(){return on;},function(v){
-          if(v){ if(CFG.sortOptions.indexOf(o[0])===-1)CFG.sortOptions.push(o[0]); }
-          else if(CFG.sortOptions.length>1){ CFG.sortOptions=CFG.sortOptions.filter(function(x){return x!==o[0];}); }
-          if(CFG.sortOptions.indexOf(CFG.sortDefault)===-1) CFG.sortDefault=CFG.sortOptions[0];
-        }));
-      })):null,
-      CFG.sortEnabled? row('Default order', select(ALL.filter(function(o){return CFG.sortOptions.indexOf(o[0])!==-1;}),
-        function(){return CFG.sortDefault;},function(v){CFG.sortDefault=v;})):null,
-      CFG.sortEnabled? h('p',{style:'font-size:12px;color:var(--muted);margin:8px 0 0',
-        text:'Newest / Oldest sort on the Year field from your captions.'}):null
-    ])
-  ];
-};
-
-PANES.styles = function(){
-  return [
-    h('div',{class:'note'},[
-      h('h4',{text:'Follows your site automatically'}),
-      h('p',{html:'The filter takes your site\'s <strong>font</strong> from the section it sits in, and derives every colour from that section\'s own text colour — borders, muted text and chip fills are tints of it, and filled buttons pick black or white text by contrast. Dropdown and drawer backgrounds are read from the nearest ancestor that actually paints one. Leave this on and the filter looks native on any template.'})
-    ]),
-    card('Colours',[
-      row('Follow site styles', toggle(function(){return CFG.inheritStyles;},function(v){CFG.inheritStyles=v;})),
-      !CFG.inheritStyles? row('Text', colorIn(function(){return CFG.textColor;},function(v){CFG.textColor=v;})):null,
-      !CFG.inheritStyles? row('Accent (selected state)', colorIn(function(){return CFG.accent;},function(v){CFG.accent=v;})):null,
-      !CFG.inheritStyles? row('Borders', colorIn(function(){return CFG.borderColor;},function(v){CFG.borderColor=v;})):null,
-      !CFG.inheritStyles? row('Muted text / counts', colorIn(function(){return CFG.mutedColor;},function(v){CFG.mutedColor=v;})):null,
-      !CFG.inheritStyles? row('Drawer background', colorIn(function(){return CFG.panelBg;},function(v){CFG.panelBg=v;})):null,
-      CFG.inheritStyles? row('Border opacity', numIn(function(){return CFG.borderOpacity;},function(v){CFG.borderOpacity=v;},0,1)):null
-    ]),
-    card('Shape & spacing',[
-      row('Corner radius (px)', numIn(function(){return CFG.radius;},function(v){CFG.radius=v;},0,40)),
-      row('Pill radius (px)', numIn(function(){return CFG.pillRadius;},function(v){CFG.pillRadius=v;},0,999),'999 = fully round, 0 = square.'),
-      row('Font size (px)', numIn(function(){return CFG.fontSize;},function(v){CFG.fontSize=v;},10,24)),
-      row('Gap between controls (px)', numIn(function(){return CFG.gap;},function(v){CFG.gap=v;},0,60)),
-      row('Space below the filter (px)', numIn(function(){return CFG.marginBottom;},function(v){CFG.marginBottom=v;},0,120))
-    ])
-  ];
-};
-
-PANES.text = function(){
-  return [card('Wording',[
-    row('"All"', textIn(function(){return CFG.txtAll;},function(v){CFG.txtAll=v;})),
-    row('Filter button', textIn(function(){return CFG.txtFilter;},function(v){CFG.txtFilter=v;})),
-    row('Drawer title', textIn(function(){return CFG.txtDrawer;},function(v){CFG.txtDrawer=v;})),
-    row('Drawer apply button', textIn(function(){return CFG.txtApply;},function(v){CFG.txtApply=v;})),
-    row('Clear all', textIn(function(){return CFG.txtClear;},function(v){CFG.txtClear=v;})),
-    row('Result count', textIn(function(){return CFG.txtCount;},function(v){CFG.txtCount=v;}),'{n} and {total} are replaced.'),
-    row('No results', textIn(function(){return CFG.txtNo;},function(v){CFG.txtNo=v;},'',true)),
-    row('Sort placeholder', textIn(function(){return CFG.txtSort;},function(v){CFG.txtSort=v;}))
-  ])];
-};
-
-PANES.install = function(){
-  var pre=h('pre',{id:'codeOut'});
-  var btn=h('button',{class:'btn sm',text:'Copy',onclick:function(){
-    navigator.clipboard.writeText(document.getElementById('codeOut').textContent);
-    btn.textContent='Copied'; setTimeout(function(){btn.textContent='Copy';},1400);
-  }});
-  return [
-    h('div',{class:'note'},[
-      h('h4',{text:'Before you paste'}),
-      h('p',{html:'Make sure <strong>captions are switched on</strong> for every gallery section you want to filter — see the Setup guide. Without them there is nothing in the page to read.'})
-    ]),
-    card('Where this goes',[
-      h('p',{style:'margin:0;font-size:13px;color:var(--muted)',
-        html:'Squarespace → <strong>Settings → Advanced → Code Injection → Footer</strong> for the whole site, or <strong>Page Settings → Advanced → Page Header Code Injection</strong> for one page only.'})
-    ]),
-    card('Install code',[h('div',{class:'copy-wrap'},[btn,pre])])
-  ];
-};
-
-/* ------------------------------------------------------------------ */
-/*  Config object + code output                                        */
-/* ------------------------------------------------------------------ */
-function buildConfig(){
-  var f=discover();
-  var o={};
-  if(CFG.sections!=='all') o.sections=CFG.sections;
-  if(CFG.captionMode!=='clean') o.captionMode=CFG.captionMode;
-  if(CFG.captionMode==='meta'){
-    if(CFG.captionFields.length)o.captionFields=CFG.captionFields;
-    if(CFG.captionDelimiter!==' / ')o.captionDelimiter=CFG.captionDelimiter;
-    if(CFG.captionShowKeys)o.captionShowKeys=true;
-  }
-  if(CFG.tagDelimiter!=='comma')o.tagDelimiter=CFG.tagDelimiter;
-
-  var settings={};
-  f.order.forEach(function(field){
-    var g=gset(field), s={};
-    if(!g.enabled){ settings[field]={enabled:false}; return; }
-    if(g.label)s.label=g.label;
-    if(g.ui!=='pills')s.ui=g.ui;
-    if(!g.multiSelect)s.multiSelect=false;
-    if(g.showCounts)s.showCounts=true;
-    if(g.allText)s.allText=g.allText;
-    if(Object.keys(s).length)settings[field]=s;
-  });
-  if(Object.keys(settings).length) o.autoGroups={settings:settings};
-
-  if(CFG.layout!=='top')o.layout=CFG.layout;
-  if(CFG.align!=='left')o.align=CFG.align;
-  if(CFG.layout==='sidebar'){
-    o.sidebarWidth=CFG.sidebarWidth;
-    if(CFG.sidebarWidthUnit!=='%')o.sidebarWidthUnit=CFG.sidebarWidthUnit;
-    if(CFG.stickySidebar)o.stickySidebar=true;
-  }
-  if(CFG.stickyToolbar)o.stickyToolbar=true;
-  if((CFG.stickyToolbar||CFG.stickySidebar)&&CFG.stickyTopOffset!==20)o.stickyTopOffset=CFG.stickyTopOffset;
-  if(CFG.mobileBreakpoint!==1024)o.mobileBreakpoint=CFG.mobileBreakpoint;
-
-  var fb={};
-  if(CFG.fbDesktop)fb.showOnDesktop=true;
-  if(!CFG.fbMobile)fb.showOnMobile=false;
-  if(CFG.fbSide!=='left')fb.side=CFG.fbSide;
-  if(Object.keys(fb).length)o.filterButton=fb;
-
-  if(!CFG.showAllOption)o.showAllOption=false;
-  if(!CFG.disableZeroOptions)o.disableZeroOptions=false;
-  if(CFG.showResultCount)o.showResultCount=true;
-  if(!CFG.showClearAll)o.showClearAll=false;
-
-  if(CFG.searchEnabled)o.search={enabled:true,placeholder:CFG.searchPlaceholder};
-  if(CFG.sortEnabled)o.sort={enabled:true,options:CFG.sortOptions,defaultOrder:CFG.sortDefault};
-
-  if(CFG.animType!=='fade'||CFG.animSpeed!=='normal'||CFG.animStagger!==40)
-    o.animation={type:CFG.animType,speed:CFG.animSpeed,stagger:CFG.animStagger};
-  if(!CFG.layoutTransition)o.layoutTransition=false;
-
-  if(!CFG.urlSync)o.urlSync=false;
-  if(CFG.urlParamPrefix!=='f_')o.urlParamPrefix=CFG.urlParamPrefix;
-  if(CFG.scrollOnChange)o.scrollOnChange=true;
-
-  var st={};
-  if(!CFG.inheritStyles){
-    st.inherit=false;
-    ['textColor','accent','borderColor','mutedColor','panelBg','sidebarBg'].forEach(function(k){ if(CFG[k])st[k]=CFG[k]; });
-  } else if(CFG.borderOpacity!==0.35) st.borderOpacity=CFG.borderOpacity;
-  [['radius',6],['pillRadius',999],['fontSize',14],['gap',10],['marginBottom',32]].forEach(function(p){
-    if(CFG[p[0]]!==p[1])st[p[0]]=CFG[p[0]];
-  });
-  if(Object.keys(st).length)o.styles=st;
-
-  var t={};
-  [['txtAll','allText','All'],['txtFilter','filterButton','Filters'],['txtDrawer','drawerTitle','Filters'],
-   ['txtApply','apply','Show results'],['txtClear','clearAll','Clear all'],['txtCount','resultCount','{n} of {total}'],
-   ['txtNo','noResults','No images match these filters.'],['txtSort','sortPlaceholder','Sort']].forEach(function(p){
-    if(CFG[p[0]]!==p[2])t[p[1]]=CFG[p[0]];
-  });
-  if(Object.keys(t).length)o.text=t;
-
-  return o;
+  if(follow)document.getElementById('sidebarBgOn').checked=false;
+  sync();
+}
+function onUnitChange(){
+  const e=document.getElementById('sidebarWidth');
+  e.value=val('sidebarWidthUnit')==='px'
+    ? Math.round(num('sidebarWidth')/100*1200)
+    : Math.max(5,Math.round(num('sidebarWidth')/1200*100));
+  sync();
 }
 
-function stringify(o,ind){
-  ind=ind||'    ';
-  var s=JSON.stringify(o,null,2);
-  return s.replace(/"([A-Za-z_$][A-Za-z0-9_$]*)":/g,'$1:')
-          .replace(/"/g,"'")
-          .split('\n').map(function(l,i){return i?ind+l:l;}).join('\n');
+/* ================= theme (mirrors the plugin's derivation) ================= */
+function theme(){
+  const hex2=h=>{h=h.replace('#','');return{r:parseInt(h.slice(0,2),16),g:parseInt(h.slice(2,4),16),b:parseInt(h.slice(4,6),16)};};
+  const t=chk('inhText')?'#151414':val('textColor'),rgb=hex2(t);
+  const a=chk('inhAccent')?t:val('accent'),ar=hex2(a);
+  const lum=(0.299*ar.r+0.587*ar.g+0.114*ar.b)/255;
+  return{text:t,accent:a,onAccent:lum>0.6?'#111':'#fff',
+    border:chk('inhBorder')?`rgba(${rgb.r},${rgb.g},${rgb.b},${num('borderOpacity')})`:val('borderColor'),
+    muted:chk('inhMuted')?`rgba(${rgb.r},${rgb.g},${rgb.b},0.62)`:val('mutedColor'),
+    chipBg:`rgba(${rgb.r},${rgb.g},${rgb.b},0.07)`,
+    active:chk('inhActive')?a:val('activeColor'),
+    panelBg:chk('inhPanel')?'#fffef5':val('panelBg'),
+    sidebarBg:chk('sidebarBgOn')?val('sidebarBg'):'transparent',
+    sidebarPad:chk('sidebarBgOn')?num('sidebarPadding'):0,
+    radius:num('radius'),fontSize:num('fontSize'),gap:num('gap'),marginBottom:num('marginBottom'),
+    pillRadius:display.pillRadius};
+}
+const PV_SPEEDS={fast:240,normal:420,slow:700};
+function anim(){
+  const type=val('animType');
+  const dur=val('animSpeed')==='custom'?num('animDuration'):(PV_SPEEDS[val('animSpeed')]||420);
+  const stagger=chk('animStagger');
+  const name=type==='slide-up'?'pv-slide-up':type==='zoom'?'pv-zoom':'pv-fade';
+  return {css:i=>type==='none'?''
+    :`animation:${name} ${dur}ms ${type==='fade'?'ease':'cubic-bezier(.22,.61,.36,1)'} both;animation-delay:${stagger?Math.min(i,14)*35:0}ms;`};
 }
 
-function renderCode(){
-  var pre=document.getElementById('codeOut');
-  if(!pre)return;
-  var cfg=buildConfig();
-  var body = Object.keys(cfg).length ? stringify(cfg) : '{}';
-  pre.textContent =
-'<link rel="stylesheet" href="https://gallery-section-filter.pages.dev/galleryFilter.css">\n'+
-'<script>\n'+
-'  window.SDL_GALLERY_FILTER_CONFIG = '+body+';\n'+
-'<\/script>\n'+
-'<script src="https://gallery-section-filter.pages.dev/galleryFilter.js"><\/script>';
-}
-
-/* ------------------------------------------------------------------ */
-/*  Preview — runs the real matching rules against the sample captions */
-/* ------------------------------------------------------------------ */
+/* ================= preview matching ================= */
 function itemHas(p,field,value){
-  var v=p.fields[field]; if(!v)return false;
-  if(v.indexOf(value)!==-1)return true;
-  return v.some(function(x){return x.indexOf(value+' > ')===0;});
+  const v=p.fields[field];if(!v)return false;
+  if(v.includes(value))return true;
+  return v.some(x=>x.indexOf(value+' > ')===0);
 }
-function pvMatches(p,skip){
-  var f=discover();
-  for(var i=0;i<f.order.length;i++){
-    var field=f.order[i];
-    if(!gset(field).enabled)continue;
-    if(field===skip)continue;
-    var a=STATE.active[field]||[];
+function pvMatch(p,skip){
+  for(const g of onGroups()){
+    if(g.field===skip)continue;
+    const a=pv.active[g.field]||[];
     if(!a.length)continue;
-    var ok=a.some(function(v){return itemHas(p,field,v);});
-    if(!ok)return false;
+    if(!a.some(v=>itemHas(p,g.field,v)))return false;
+  }
+  if(pv.query){
+    if(!(p.raw||'').toLowerCase().includes(pv.query))return false;
   }
   return true;
 }
-
-function renderPreview(){
-  var f=discover();
-  var bar=document.getElementById('pvBar'), grid=document.getElementById('pvGrid');
-  if(!bar)return;
-  bar.innerHTML=''; grid.innerHTML='';
-
-  var root=h('div',{class:'sdl-gf-root'});
-  var wrap=h('div',{class:'sdl-gf-bar'});
-  var groups=h('div',{class:'sdl-gf-inline-groups'});
-  if(CFG.align!=='left')groups.style.justifyContent=CFG.align==='center'?'center':'flex-end';
-
-  f.order.forEach(function(field){
-    var g=gset(field); if(!g.enabled)return;
-    var box=h('div',{class:'sdl-gf-group'});
-    box.appendChild(h('div',{class:'sdl-gf-group-label',text:(g.label||field)}));
-    var list=h('div',{class:'sdl-gf-options'});
-    var act=STATE.active[field]||[];
-
-    function opt(value,isAll){
-      var on = isAll ? !act.length : act.indexOf(value)!==-1;
-      var cnt = isAll
-        ? SAMPLE.filter(function(s){return pvMatches(s._p,field);}).length
-        : SAMPLE.filter(function(s){return itemHas(s._p,field,value)&&pvMatches(s._p,field);}).length;
-      var b=h('button',{class:'sdl-gf-opt sdl-gf-opt-'+g.ui+(on?' sdl-gf-opt-on':'')+((!isAll&&CFG.disableZeroOptions&&cnt===0&&!on)?' sdl-gf-opt-disabled':'')});
-      if(g.ui==='pills')b.style.borderRadius=CFG.pillRadius+'px';
-      if(g.ui==='chips')b.style.borderRadius=CFG.radius+'px';
-      b.appendChild(h('span',{text:isAll?(g.allText||CFG.txtAll):value.split(' > ').pop()}));
-      if(g.showCounts)b.appendChild(h('span',{class:'sdl-gf-opt-count',text:String(cnt)}));
-      b.addEventListener('click',function(){
-        if(isAll)STATE.active[field]=[];
-        else if(g.multiSelect){
-          var a=STATE.active[field]||(STATE.active[field]=[]);
-          var i=a.indexOf(value); if(i===-1)a.push(value); else a.splice(i,1);
-        } else STATE.active[field]=(act[0]===value)?[]:[value];
-        renderPreview();
-      });
-      return b;
-    }
-
-    if(CFG.showAllOption&&g.ui!=='checkbox') list.appendChild(opt('__all__',true));
-    f.by[field].forEach(function(v,i){
-      if(g.ui==='text'&&list.children.length) list.appendChild(h('span',{class:'sdl-gf-delim',text:'/'}));
-      list.appendChild(opt(v,false));
-    });
-    box.appendChild(list);
-    groups.appendChild(box);
-  });
-
-  wrap.appendChild(groups);
-
-  var right=h('div',{style:'display:flex;align-items:center;gap:10px'});
-  if(CFG.searchEnabled) right.appendChild(h('input',{type:'text',placeholder:CFG.searchPlaceholder,
-    style:'border:1px solid rgba(0,0,0,.25);border-radius:'+CFG.radius+'px;padding:6px 10px;font:inherit;width:130px'}));
-  if(CFG.sortEnabled) right.appendChild(h('select',{style:'border:1px solid rgba(0,0,0,.25);border-radius:'+CFG.radius+'px;padding:6px 10px;font:inherit'},
-    [h('option',{text:CFG.txtSort})]));
-  var vis=SAMPLE.filter(function(s){return pvMatches(s._p,null);});
-  if(CFG.showResultCount) right.appendChild(h('span',{style:'font-size:12px;opacity:.6',
-    text:CFG.txtCount.replace('{n}',vis.length).replace('{total}',SAMPLE.length)}));
-  var anyActive=Object.keys(STATE.active).some(function(k){return (STATE.active[k]||[]).length;});
-  if(CFG.showClearAll&&anyActive) right.appendChild(h('button',{class:'btn ghost sm',text:CFG.txtClear,
-    onclick:function(){STATE.active={};renderPreview();}}));
-  if(right.children.length) wrap.appendChild(right);
-
-  root.appendChild(wrap);
-  root.style.marginBottom=CFG.marginBottom+'px';
-  root.style.fontSize=CFG.fontSize+'px';
-  bar.appendChild(root);
-
-  /* grid */
-  if(!vis.length){
-    grid.style.display='block';
-    grid.appendChild(h('div',{style:'padding:48px 0;text-align:center;opacity:.55;font-size:13px',text:CFG.txtNo}));
-  } else if(STATE.pv==='grid'){
-    grid.style.display='grid';
-    grid.style.gridTemplateColumns='repeat(3,1fr)';
-    vis.forEach(function(s){ grid.appendChild(tile(s,0,110)); });
-  } else if(STATE.pv==='masonry'){
-    grid.style.display='block';
-    var cols=3, colEls=[], holder=h('div',{style:'display:flex;gap:10px;align-items:flex-start'});
-    for(var i=0;i<cols;i++){var c=h('div',{style:'flex:1;display:flex;flex-direction:column;gap:10px'});colEls.push(c);holder.appendChild(c);}
-    var hgt=[0,0,0];
-    vis.forEach(function(s){
-      var ci=hgt.indexOf(Math.min.apply(null,hgt));
-      var hh=Math.round(150/s.ratio);
-      colEls[ci].appendChild(tile(s,0,hh));
-      hgt[ci]+=hh+10;
-    });
-    grid.appendChild(holder);
-  } else {
-    grid.style.display='block';
-    var rowH=96, containerW=440, rows=[], row=[], w=0;
-    vis.forEach(function(s){
-      var iw=rowH*s.ratio;
-      if(row.length && w+iw+10*row.length>containerW){rows.push({items:row,nat:w});row=[];w=0;}
-      row.push(s); w+=iw;
-    });
-    if(row.length)rows.push({items:row,nat:w,last:true});
-    rows.forEach(function(r){
-      var avail=containerW-10*(r.items.length-1);
-      var sc=Math.min(avail/r.nat, r.last?3:99);
-      var rowEl=h('div',{style:'display:flex;gap:10px;margin-bottom:10px'});
-      r.items.forEach(function(s){ rowEl.appendChild(tile(s,Math.round(rowH*s.ratio*sc),Math.round(rowH*sc))); });
-      grid.appendChild(rowEl);
-    });
-  }
-
-  document.getElementById('pvCount').textContent =
-    vis.length+' of '+SAMPLE.length+' images'+(anyActive?' — filtered':'');
-
-  renderCode();
+function pvSort(list){
+  const o=pv.sort||val('sortDefault')||'gallery';
+  const out=list.slice();
+  const fv=s=>{const v=s._p.fields[val('sortField')||'Year'];return v&&v.length?parseFloat(v[0])||0:0;};
+  if(o==='az'||o==='za'){out.sort((a,b)=>a.cap.localeCompare(b.cap));if(o==='za')out.reverse();}
+  else if(o==='newest')out.sort((a,b)=>fv(b)-fv(a));
+  else if(o==='oldest')out.sort((a,b)=>fv(a)-fv(b));
+  else if(o==='random')out.sort(()=>Math.random()-0.5);
+  return out;
 }
-
-function tile(s,w,hh){
-  var t=h('div',{class:'pv-tile'});
-  t.style.height=hh+'px';
-  if(w)t.style.width=w+'px'; else t.style.width='100%';
-  t.style.background='linear-gradient(135deg,#d9d6c8,#c3bfae)';
-  var label='';
-  if(CFG.captionMode==='clean') label=s._p.excerpt;
-  else if(CFG.captionMode==='meta'){
-    var fs=(CFG.captionFields.length?CFG.captionFields:Object.keys(s._p.fields));
-    label=fs.map(function(f){
-      var v=s._p.fields[f]; if(!v||!v.length)return '';
-      var leaves=v.filter(function(x){return !v.some(function(o){return o!==x&&o.indexOf(x+' > ')===0;});})
-                  .map(function(x){return x.split(' > ').pop();});
-      return leaves.length?((CFG.captionShowKeys?f+': ':'')+leaves.join(', ')):'';
-    }).filter(Boolean).join(CFG.captionDelimiter);
-  } else if(CFG.captionMode==='raw') label=s.cap;
-  if(label) t.appendChild(h('span',{text:label}));
-  return t;
+function activeCount(){return onGroups().reduce((n,g)=>n+(pv.active[g.field]||[]).length,0)+(pv.query?1:0);}
+function pvToggle(field,value,isAll){
+  const g=groups.find(x=>x.field===field);if(!g)return;
+  if(isAll)pv.active[field]=[];
+  else if(g.multiSelect){
+    const a=pv.active[field]||(pv.active[field]=[]);
+    const i=a.indexOf(value);if(i===-1)a.push(value);else a.splice(i,1);
+  } else pv.active[field]=(pv.active[field]||[])[0]===value?[]:[value];
+  renderPreview();renderUrl();
 }
-
-/* ------------------------------------------------------------------ */
-/*  Render                                                             */
-/* ------------------------------------------------------------------ */
-function render(){
-  var host=document.getElementById('panes');
-  host.innerHTML='';
-  (PANES[STATE.tab]()||[]).forEach(function(n){ if(n)host.appendChild(n); });
-  Array.prototype.forEach.call(document.querySelectorAll('.nav button'),function(b){
-    b.classList.toggle('on', b.dataset.tab===STATE.tab);
-  });
+function pvClear(){pv.active={};pv.query='';renderPreview();renderUrl();}
+function pvDrawer(o){pv.drawerOpen=o;renderPreview();}
+function pvDd(key){pv.openDd=pv.openDd===key?null:key;renderPreview();}
+function setPv(t){
+  pvType=t;
+  document.querySelectorAll('.pv-types button').forEach(b=>b.classList.toggle('on',b.dataset.pv===t));
   renderPreview();
 }
 
-document.querySelectorAll('.nav button').forEach(function(b){
-  b.addEventListener('click',function(){ STATE.tab=b.dataset.tab; render(); });
-});
-document.querySelectorAll('.pv-tabs button').forEach(function(b){
-  b.addEventListener('click',function(){
-    STATE.pv=b.dataset.pv;
-    document.querySelectorAll('.pv-tabs button').forEach(function(x){x.classList.toggle('on',x===b);});
-    renderPreview();
-  });
-});
+/* ================= preview option rendering ================= */
+function optionsHtml(T,g,ctx){
+  const ui=gUi(g);
+  const act=pv.active[g.field]||[];
+  const f=discover();
+  const vals=f.by[g.field]||[];
+  const allTxt=(chk('uniqueAllText')&&g.allText)||val('allText')||'All';
+  const q=s=>String(s).replace(/'/g,"\\'");
 
-render();
+  const one=(value,isAll)=>{
+    const on=isAll?!act.length:act.includes(value);
+    const cnt=isAll
+      ? SAMPLE.filter(s=>pvMatch(s._p,g.field)).length
+      : SAMPLE.filter(s=>itemHas(s._p,g.field,value)&&pvMatch(s._p,g.field)).length;
+    const dead=!isAll&&chk('disableZeroOptions')&&cnt===0&&!on;
+    const label=isAll?allTxt:value.split(' > ').pop();
+    const countHtml=g.showCounts?` <span style="font-size:.82em;opacity:${on?'.75':'.62'};color:${on&&ui!=='text'&&ui!=='checkbox'?T.onAccent:T.muted}">${cnt}</span>`:'';
+    const click=`onclick="pvToggle('${q(g.field)}','${q(value)}',${!!isAll})"`;
+    const dim=dead?'opacity:.35;pointer-events:none;':'';
+    const indent=(!isAll&&value.includes(' > ')&&ui==='checkbox')?'padding-left:20px;':'';
+
+    if(ui==='checkbox'){
+      return `<label style="display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer;${dim}${indent}" ${click}>
+        <input type="${g.multiSelect?'checkbox':'radio'}" ${on?'checked':''} style="accent-color:${T.accent};width:15px;height:15px;margin:0" onclick="event.stopPropagation();pvToggle('${q(g.field)}','${q(value)}',${!!isAll})">
+        <span style="flex:1">${esc(label)}</span>${countHtml}</label>`;
+    }
+    if(ui==='text'){
+      return `<button ${click} style="border:0;background:none;cursor:pointer;font:inherit;padding:2px 0;${dim}
+        color:${on?T.active:'inherit'};opacity:${on?1:.7};${on?'text-decoration:underline;text-underline-offset:4px;':''}">${esc(label)}${countHtml}</button>`;
+    }
+    const radius=ui==='pills'?T.pillRadius:T.radius;
+    return `<button ${click} style="display:inline-flex;align-items:center;gap:6px;padding:${ui==='pills'?'7px 14px':'6px 12px'};
+      border:1px solid ${on?T.accent:T.border};border-radius:${radius}px;cursor:pointer;font:inherit;${dim}
+      background:${on?T.accent:(ui==='chips'?T.chipBg:'transparent')};color:${on?T.onAccent:'inherit'}">${esc(label)}${countHtml}</button>`;
+  };
+
+  const parts=[];
+  if(chk('showAllOption')&&ui!=='checkbox')parts.push(one('__all__',true));
+  vals.forEach(v=>parts.push(one(v,false)));
+
+  if(ui==='text'){
+    const D={pipe:'|',space:' ',comma:',',slash:'/',dot:'·',dash:'–'};
+    const d=D[display.delimiter]!==undefined?D[display.delimiter]:display.delimiter;
+    const tight=/^[,.;:]$/.test(d);
+    return `<span style="display:inline-flex;flex-wrap:wrap;align-items:center">${
+      parts.join(`<span style="opacity:.5;padding:0 .45em;${tight?'padding-left:0;':''};color:${T.muted}">${esc(d)}</span>`)}</span>`;
+  }
+  const dir=ui==='checkbox'?'column':'row';
+  return `<div style="display:flex;flex-direction:${dir};flex-wrap:wrap;gap:${ui==='checkbox'?'2px':'8px'};align-items:${ui==='checkbox'?'stretch':'center'}">${parts.join('')}</div>`;
+}
+
+function ddHtml(T){
+  return onGroups().map(g=>{
+    const act=pv.active[g.field]||[];
+    const open=pv.openDd===g.field;
+    return `<span style="position:relative;display:inline-block">
+      <button onclick="event.stopPropagation();pvDd('${String(g.field).replace(/'/g,"\\'")}')"
+        style="display:inline-flex;align-items:center;gap:8px;padding:8px 14px;font:inherit;cursor:pointer;color:inherit;
+        background:transparent;border:1px solid ${act.length?T.accent:T.border};border-radius:${T.radius}px;
+        ${act.length?`box-shadow:inset 0 0 0 1px ${T.accent};`:''}">
+        <span>${esc(gLabel(g))}</span>
+        ${act.length?`<span style="display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:99px;font-size:11px;background:${T.accent};color:${T.onAccent}">${act.length}</span>`:''}
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="transition:transform .18s;${open?'transform:rotate(180deg)':''}"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="pvdd ${open?'open':''}" style="position:absolute;top:calc(100% + 6px);left:0;z-index:40;min-width:210px;max-width:320px;
+        background:${T.panelBg};border:1px solid ${T.border};border-radius:${T.radius}px;box-shadow:0 6px 24px rgba(0,0,0,.10)">
+        <div class="pvdd-inner"><div style="padding:12px 14px">${optionsHtml(T,g,'dd')}</div></div>
+      </div></span>`;
+  }).join('');
+}
+
+function inlineHtml(T){
+  return onGroups().map(g=>`<div style="display:flex;flex-direction:column;gap:6px">
+    ${display.showLabel!==false?`<div style="font-size:.85em;letter-spacing:.06em;text-transform:uppercase;color:${T.muted}">${esc(gLabel(g))}</div>`:''}
+    ${optionsHtml(T,g,'inline')}</div>`).join('');
+}
+
+function accordionsHtml(T){
+  return onGroups().map(g=>{
+    const act=pv.active[g.field]||[];
+    return `<div style="border-bottom:1px solid ${T.border}">
+      <div style="display:flex;align-items:center;gap:8px;padding:13px 0;font-weight:600">
+        <span style="flex:1">${esc(gLabel(g))}</span>
+        ${act.length?`<span style="display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:99px;font-size:11px;background:${T.accent};color:${T.onAccent}">${act.length}</span>`:''}
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div style="padding:0 0 14px">${optionsHtml(T,g,'acc')}</div></div>`;
+  }).join('');
+}
+
+/* ================= gallery preview ================= */
+function galleryHtml(T,results,mobile){
+  const A=anim();
+  if(!results.length){
+    return `<div style="padding:50px 20px;text-align:center;color:${T.muted}">
+      <p style="margin:0 0 14px">${esc(val('txNoResults'))}</p>
+      ${chk('showClearAll')?`<button onclick="pvClear()" style="padding:9px 18px;border:1px solid ${T.accent};background:none;color:${T.accent};border-radius:${T.radius}px;cursor:pointer;font:inherit">${esc(val('txNoResultsReset'))}</button>`:''}
+    </div>`;
+  }
+  const tile=(s,i,w,h)=>`<div style="${w?`width:${w}px;`:''}${h?`height:${h}px;`:''}border-radius:3px;overflow:hidden;position:relative;
+    background:linear-gradient(135deg,#e7e3d6,#cfcabb);${A.css(i)}">
+    ${capLabel(s)?`<span style="position:absolute;left:8px;bottom:7px;font-size:10px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6)">${esc(capLabel(s))}</span>`:''}</div>`;
+
+  if(pvType==='grid'){
+    const cols=mobile?1:2;
+    return `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:16px">
+      ${results.map((s,i)=>tile(s,i,0,mobile?200:210)).join('')}</div>`;
+  }
+  if(pvType==='masonry'){
+    const cols=mobile?1:3, colH=new Array(cols).fill(0), colEls=new Array(cols).fill('');
+    results.forEach((s,i)=>{
+      const c=colH.indexOf(Math.min(...colH));
+      const h=Math.round(170/s.ratio);
+      colEls[c]+=tile(s,i,0,h);colH[c]+=h+12;
+    });
+    return `<div style="display:flex;gap:12px;align-items:flex-start">
+      ${colEls.map(c=>`<div style="flex:1;display:flex;flex-direction:column;gap:12px">${c}</div>`).join('')}</div>`;
+  }
+  // strips — justified rows, matching the plugin (trailing row justified too)
+  const containerW=mobile?380:660, rowH=110, gutter=12;
+  const rows=[];let row=[],natural=0;
+  results.forEach(s=>{
+    const w=rowH*s.ratio;
+    if(row.length&&natural+w+gutter*row.length>containerW){rows.push({items:row,natural});row=[];natural=0;}
+    row.push(s);natural+=w;
+  });
+  if(row.length)rows.push({items:row,natural,last:true});
+  let idx=0;
+  return rows.map(r=>{
+    const avail=containerW-gutter*(r.items.length-1);
+    let sc=avail/r.natural;
+    if(r.last&&sc>3)sc=3;
+    const h=Math.round(rowH*sc);
+    return `<div style="display:flex;gap:${gutter}px;margin-bottom:${gutter}px">${
+      r.items.map(s=>tile(s,idx++,Math.round(rowH*s.ratio*sc),h)).join('')}</div>`;
+  }).join('');
+}
+
+function capLabel(s){
+  const mode=val('captionMode');
+  if(mode==='hide')return '';
+  if(mode==='raw')return s.cap;
+  if(mode==='meta'){
+    const want=(val('captionFields')||'').split(',').map(x=>x.trim()).filter(Boolean);
+    const fs=want.length?want:Object.keys(s._p.fields);
+    return fs.map(f=>{
+      const v=s._p.fields[f];if(!v||!v.length)return '';
+      const leaves=v.filter(x=>!v.some(o=>o!==x&&o.indexOf(x+' > ')===0)).map(x=>x.split(' > ').pop());
+      return leaves.length?((chk('captionShowKeys')?f+': ':'')+leaves.join(', ')):'';
+    }).filter(Boolean).join(val('captionDelimiter')||' / ');
+  }
+  return s._p.excerpt;
+}
+
+/* ================= preview ================= */
+function renderPreview(){
+  syncGroups();
+  const host=document.getElementById('preview');
+  const T=theme();
+  const mobile=dev==='mobile';
+  const sideMode=val('layout')==='sidebar'&&!mobile;
+  SAMPLE.forEach(s=>{s.raw=s.cap;});
+  const results=pvSort(SAMPLE.filter(s=>pvMatch(s._p,null)));
+  const anyGroups=onGroups().length>0;
+
+  const btn=mobile?chk('fbMobile'):chk('fbDesktop');
+  const showBtn=btn&&anyGroups;
+  // Mirrors the plugin: on mobile the button always replaces the inline groups;
+  // on desktop only when "button only" is ticked. Sidebar owns them otherwise.
+  const showInline=anyGroups&&!sideMode&&(mobile?!btn:!(btn&&chk('fbHideGroups')));
+  const stickyBar=chk('stickyToolbar')&&!sideMode;
+
+  document.getElementById('pvWrap').className='pv-wrap'+(mobile?' mobile':'');
+  host.style.color=T.text;host.style.fontSize=T.fontSize+'px';
+  host.onclick=()=>{if(pv.openDd){pv.openDd=null;renderPreview();}};
+
+  const banner=!anyGroups
+    ?`<div style="padding:12px 14px;margin-bottom:16px;border:1px dashed ${T.border};border-radius:${T.radius}px;color:${T.muted};font-size:.9em">
+       No filter groups are switched on, so the plugin leaves your gallery exactly as Squarespace renders it.</div>`:'';
+
+  const align=val('align');
+  const groupsHtml=showInline?(display.container==='inline'?inlineHtml(T):ddHtml(T)):'';
+
+  const bar=`
+    <div style="${stickyBar?`position:sticky;top:${num('stickyTopOffset')}px;z-index:6;background:${T.panelBg};padding:8px 0;`:''}margin-bottom:${T.marginBottom}px">
+      <div style="display:flex;align-items:${display.container==='inline'&&display.showLabel!==false?'flex-end':'center'};gap:${T.gap}px;flex-wrap:wrap">
+        ${showBtn?`<button onclick="event.stopPropagation();pvDrawer(true)" style="display:inline-flex;align-items:center;gap:7px;padding:8px 14px;
+          border:1px solid ${activeCount()?T.accent:T.border};border-radius:${T.radius}px;background:none;font:inherit;cursor:pointer;color:inherit">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg>
+          ${esc(val('fbLabel'))}${activeCount()?` <b style="background:${T.accent};color:${T.onAccent};border-radius:99px;padding:0 6px;font-size:11px">${activeCount()}</b>`:''}</button>`:''}
+        ${showInline?`<span style="display:flex;flex-wrap:wrap;gap:${display.container==='inline'?T.gap*2:T.gap}px;flex:1 1 0;min-width:0;
+          justify-content:${align==='center'?'center':align==='right'?'flex-end':'flex-start'}">${groupsHtml}</span>`:''}
+        <span style="margin-left:auto;display:flex;gap:${T.gap}px;align-items:center;flex-wrap:wrap">
+          ${chk('sortEnabled')?`<select onchange="pv.sort=this.value;renderPreview();renderUrl()" style="padding:8px 11px;border:1px solid ${T.border};border-radius:${T.radius}px;background:none;font:inherit;color:inherit">
+              <option value="" disabled ${!pv.sort?'selected':''}>${esc(val('sortLabel'))}</option>
+              ${sortKeys().map(k=>`<option value="${k}"${pv.sort===k?' selected':''}>${esc(sortLabelOf(k))}</option>`).join('')}</select>`:''}
+          ${chk('searchEnabled')?`<input placeholder="${esc(val('searchPlaceholder'))}" value="${esc(pv.query)}"
+            oninput="pv.query=this.value.toLowerCase();renderPreview();renderUrl()"
+            style="padding:8px 12px;border:1px solid ${T.border};border-radius:${T.radius}px;width:${mobile?'100%':'180px'};font:inherit;background:none;color:inherit">`:''}
+        </span>
+      </div>
+      ${(chk('showResultCount')||chk('showActiveChips')||chk('showClearAll'))?`
+      <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:14px;font-size:.93em">
+        ${chk('showResultCount')?`<span style="color:${T.muted}">${esc(val('txResultCount').replace('{n}',results.length).replace('{total}',SAMPLE.length))}</span>`:''}
+        ${chk('showActiveChips')?onGroups().flatMap(g=>(pv.active[g.field]||[]).map(v=>
+          `<button onclick="pvToggle('${String(g.field).replace(/'/g,"\\'")}','${String(v).replace(/'/g,"\\'")}',false)"
+            style="display:inline-flex;align-items:center;gap:7px;padding:4px 11px;border:0;border-radius:99px;
+            background:${T.chipBg};color:inherit;font:inherit;font-size:.92em;cursor:pointer">${esc(v.split(' > ').pop())} <span style="opacity:.65">×</span></button>`)).join(''):''}
+        ${chk('showClearAll')&&activeCount()?`<button onclick="pvClear()"
+          style="margin-left:auto;border:0;background:none;text-decoration:underline;text-underline-offset:3px;cursor:pointer;font:inherit;color:${T.muted}">${esc(val('txClearAll'))}</button>`:''}
+      </div>`:''}
+    </div>`;
+
+  const grid=galleryHtml(T,results,mobile);
+  const sideStick=chk('stickySidebar')?`position:sticky;top:${num('stickyTopOffset')}px;`:'';
+  const sw=num('sidebarWidth')+val('sidebarWidthUnit');
+  const body=sideMode&&anyGroups
+    ?`<div style="display:flex;gap:34px;align-items:flex-start">
+        <aside style="flex:0 0 ${sw};max-width:${sw};${sideStick}background:${T.sidebarBg};padding:${T.sidebarPad}px;border-radius:${T.radius}px">${accordionsHtml(T)}</aside>
+        <div style="flex:1;min-width:0">${bar}${grid}</div></div>`
+    :`${bar}${grid}`;
+
+  const drawer=pv.drawerOpen?`
+    <div onclick="pvDrawer(false)" style="position:absolute;inset:0;background:rgba(0,0,0,.42);z-index:20"></div>
+    <div style="position:absolute;top:0;bottom:0;${val('fbSide')==='left'?'left:0':'right:0'};z-index:21;width:min(340px,86%);
+      background:${T.panelBg};box-shadow:0 0 40px rgba(0,0,0,.18);display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid ${T.border}">
+        <b>${esc(val('txFiltersTitle'))}</b>
+        <button onclick="pvDrawer(false)" style="border:0;background:none;cursor:pointer;font-size:17px;color:inherit">✕</button></div>
+      <div style="flex:1;overflow:auto;padding:2px 18px 18px">${accordionsHtml(T)}</div>
+      <div style="display:flex;gap:10px;padding:14px 18px;border-top:1px solid ${T.border}">
+        <button onclick="pvClear()" style="padding:10px 15px;border:1px solid ${T.border};border-radius:${T.radius}px;background:none;cursor:pointer;font:inherit;color:inherit">${esc(val('txClearAll'))}</button>
+        <button onclick="pvDrawer(false)" style="flex:1;padding:10px 15px;border:0;border-radius:${T.radius}px;background:${T.accent};color:${T.onAccent};cursor:pointer;font:inherit">${esc(val('txApply').replace('{n}',results.length).replace('{total}',SAMPLE.length))}</button>
+      </div></div>`:'';
+
+  host.innerHTML=banner+body+drawer;
+}
+
+function renderUrl(){
+  const bar=document.getElementById('urlBar');
+  if(!chk('urlSync')){bar.innerHTML='<span>URL syncing is off</span>';return;}
+  const p=[];
+  const pre=val('urlParamPrefix')||'f_';
+  onGroups().forEach(g=>{
+    const a=pv.active[g.field]||[];
+    if(a.length)p.push(pre+'s1_'+slugify(g.field)+'='+a.map(slugify).join(','));
+  });
+  if(pv.query)p.push(pre+'q='+encodeURIComponent(pv.query));
+  if(pv.sort&&pv.sort!=='gallery')p.push(pre+'sort='+pv.sort);
+  bar.innerHTML='<b>/gallery</b>'+(p.length?'?'+esc(p.join('&')):'');
+}
+function slugify(s){return String(s).toLowerCase().trim().replace(/\s*>\s*/g,'--').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');}
+
+/* ================= config + code ================= */
+function buildConfig(){
+  const c={};
+  const secs=val('sections').trim();
+  if(secs)c.sections=secs.split(',').map(s=>s.trim()).filter(Boolean);
+
+  if(val('captionMode')!=='clean')c.captionMode=val('captionMode');
+  if(val('captionMode')==='meta'){
+    const f=(val('captionFields')||'').split(',').map(s=>s.trim()).filter(Boolean);
+    if(f.length)c.captionFields=f;
+    if(val('captionDelimiter')!==' / ')c.captionDelimiter=val('captionDelimiter');
+    if(chk('captionShowKeys'))c.captionShowKeys=true;
+  }
+  if(val('tagDelimiter')!=='comma')c.tagDelimiter=val('tagDelimiter');
+
+  const d={};
+  if(display.container!=='dropdown')d.container=display.container;
+  if(display.optionStyle!=='checkbox')d.optionStyle=display.optionStyle;
+  if(display.container==='inline'&&display.showLabel===false)d.showLabel=false;
+  if(display.optionStyle==='buttons'&&display.pillRadius!==999)d.pillRadius=display.pillRadius;
+  if(display.optionStyle==='text'&&display.delimiter!=='pipe')d.delimiter=display.delimiter;
+  if(Object.keys(d).length)c.display=d;
+
+  // Order is expressed by listing the groups explicitly whenever the user has
+  // reordered or disabled any; otherwise the automatic placeholder is enough.
+  const f=discover();
+  const reordered=groups.map(g=>g.field).join('|')!==f.order.join('|');
+  const anyOff=groups.some(g=>!g.on);
+  const settings={};
+  groups.forEach(g=>{
+    const s={};
+    if(!g.on){settings[g.field]={enabled:false};return;}
+    if(g.label)s.label=g.label;
+    if(g.ui)s.ui=g.ui;
+    if(!g.multiSelect)s.multiSelect=false;
+    if(g.showCounts)s.showCounts=true;
+    if(g.collapsed)s.collapsed=true;
+    if(chk('showAllOption')&&chk('uniqueAllText')&&g.allText)s.allText=g.allText;
+    if(Object.keys(s).length)settings[g.field]=s;
+  });
+  const ag={};
+  if(reordered)ag.order=groups.filter(g=>g.on).map(g=>g.field);
+  if(Object.keys(settings).length)ag.settings=settings;
+  if(Object.keys(ag).length)c.autoGroups=ag;
+
+  if(val('layout')!=='top')c.layout=val('layout');
+  if(val('align')!=='left')c.align=val('align');
+  if(val('layout')==='sidebar'){
+    c.sidebarWidth=num('sidebarWidth');
+    if(val('sidebarWidthUnit')!=='%')c.sidebarWidthUnit=val('sidebarWidthUnit');
+    if(chk('stickySidebar'))c.stickySidebar=true;
+  } else if(chk('stickyToolbar'))c.stickyToolbar=true;
+  if((chk('stickySidebar')||chk('stickyToolbar'))&&num('stickyTopOffset')!==20)c.stickyTopOffset=num('stickyTopOffset');
+  if(num('mobileBreakpoint')!==1024)c.mobileBreakpoint=num('mobileBreakpoint');
+
+  const fb={};
+  if(chk('fbDesktop'))fb.showOnDesktop=true;
+  if(!chk('fbMobile'))fb.showOnMobile=false;
+  if(chk('fbDesktop')&&chk('fbHideGroups'))fb.hideGroupsOnDesktop=true;
+  if(val('fbSide')!=='left')fb.side=val('fbSide');
+  if(Object.keys(fb).length)c.filterButton=fb;
+
+  if(!chk('showAllOption'))c.showAllOption=false;
+  if(chk('showAllOption')&&val('allText')!=='All')c.text=Object.assign(c.text||{},{allText:val('allText')});
+  if(!chk('disableZeroOptions'))c.disableZeroOptions=false;
+  if(chk('showResultCount'))c.showResultCount=true;
+  if(chk('showActiveChips'))c.showActiveChips=true;
+  if(!chk('showClearAll'))c.showClearAll=false;
+
+  if(chk('searchEnabled'))c.search={enabled:true,placeholder:val('searchPlaceholder')};
+  if(chk('sortEnabled')){
+    c.sort={enabled:true,options:sortKeys(),defaultOrder:val('sortDefault')||'gallery'};
+    if((val('sortField')||'Year')!=='Year')c.sort.sortField=val('sortField');
+  }
+
+  const a={};
+  if(val('animType')!=='fade')a.type=val('animType');
+  if(val('animSpeed')!=='normal')a.speed=val('animSpeed');
+  if(val('animSpeed')==='custom')a.duration=num('animDuration');
+  if(!chk('animStagger'))a.stagger=0;
+  if(Object.keys(a).length)c.animation=a;
+  if(!chk('layoutTransition'))c.layoutTransition=false;
+
+  if(!chk('urlSync'))c.urlSync=false;
+  if(chk('scrollOnChange'))c.scrollOnChange=true;
+
+  const st={};
+  if(!chk('inhAll')){
+    st.inherit=false;
+    if(!chk('inhText'))st.textColor=val('textColor');
+    if(!chk('inhAccent'))st.accent=val('accent');
+    if(!chk('inhBorder'))st.borderColor=val('borderColor');
+    if(!chk('inhMuted'))st.mutedColor=val('mutedColor');
+    if(!chk('inhActive'))st.activeColor=val('activeColor');
+    if(!chk('inhPanel'))st.panelBg=val('panelBg');
+  }
+  if(chk('inhBorder')&&num('borderOpacity')!==0.35)st.borderOpacity=num('borderOpacity');
+  if(chk('sidebarBgOn')){st.sidebarBg=val('sidebarBg');st.sidebarPadding=num('sidebarPadding');}
+  if(num('radius')!==6)st.radius=num('radius');
+  if(display.optionStyle==='buttons'&&display.pillRadius!==999)st.pillRadius=display.pillRadius;
+  if(num('fontSize')!==14)st.fontSize=num('fontSize');
+  if(num('gap')!==10)st.gap=num('gap');
+  if(num('marginBottom')!==32)st.marginBottom=num('marginBottom');
+  if(Object.keys(st).length)c.styles=st;
+
+  const t=c.text||{};
+  const TXT=[['fbLabel','filterButton','Filters'],['txFiltersTitle','drawerTitle','Filters'],
+    ['txApply','apply','Show {n} results'],['txClearAll','clearAll','Clear all'],
+    ['txResultCount','resultCount','{n} of {total}'],['txNoResults','noResults','No images match these filters.'],
+    ['txNoResultsReset','noResultsReset','Clear all filters'],['sortLabel','sortPlaceholder','Sort']];
+  TXT.forEach(p=>{if(val(p[0])!==p[2])t[p[1]]=val(p[0]);});
+  if(Object.keys(t).length)c.text=t;
+
+  return c;
+}
+
+function stringify(o){
+  return JSON.stringify(o,null,2)
+    .replace(/"([A-Za-z_$][A-Za-z0-9_$]*)":/g,'$1:')
+    .replace(/"/g,"'")
+    .split('\n').map((l,i)=>i?'    '+l:l).join('\n');
+}
+function renderCode(){
+  const c=buildConfig();
+  document.getElementById('code').textContent=
+`<link rel="stylesheet" href="https://gallery-section-filter.pages.dev/galleryFilter.css">
+<script>
+  window.SDL_GALLERY_FILTER_CONFIG = ${Object.keys(c).length?stringify(c):'{}'};
+<\/script>
+<script src="https://gallery-section-filter.pages.dev/galleryFilter.js"><\/script>`;
+}
+function copyCode(){
+  navigator.clipboard.writeText(document.getElementById('code').textContent);
+  const b=document.getElementById('copyBtn');
+  b.classList.add('copied');b.querySelector('span').textContent='Copied!';
+  setTimeout(()=>{b.classList.remove('copied');b.querySelector('span').textContent='Copy Code';},1500);
+}
+
+/* ================= glue ================= */
+function setTab(i){
+  document.querySelectorAll('.tab').forEach((t,n)=>t.classList.toggle('on',n===i));
+  [0,1,2].forEach(n=>document.getElementById('pane'+n).hidden=n!==i);
+}
+function setDev(d){
+  dev=d;
+  document.getElementById('devDesktop').classList.toggle('on',d==='desktop');
+  document.getElementById('devMobile').classList.toggle('on',d==='mobile');
+  if(d==='desktop')pv.drawerOpen=false;
+  renderPreview();
+}
+
+function sync(){
+  const side=val('layout')==='sidebar';
+  document.getElementById('rowSideW').hidden=!side;
+  document.getElementById('rowStickySide').hidden=!side;
+  document.getElementById('rowStickyBar').hidden=side;
+  document.getElementById('rowAlign').hidden=side;
+  document.getElementById('rowStickyTop').hidden=!(chk('stickySidebar')||chk('stickyToolbar'));
+
+  const meta=val('captionMode')==='meta';
+  document.getElementById('rowCapFields').hidden=!meta;
+  document.getElementById('rowCapDelim').hidden=!meta;
+  document.getElementById('rowCapKeys').hidden=!meta;
+
+  document.getElementById('rowAllText').hidden=!chk('showAllOption');
+  document.getElementById('rowUniqueAll').hidden=!chk('showAllOption');
+  document.getElementById('uniqueAllHint').hidden=!chk('showAllOption');
+
+  // Drawer settings only matter while the button exists somewhere.
+  const anyDrawer=chk('fbDesktop')||chk('fbMobile');
+  ['rowFbSide','rowFbLabel','rowDrawerTitle','rowApply'].forEach(id=>{
+    document.getElementById(id).hidden=!anyDrawer;
+  });
+  document.getElementById('rowFbHideGroups').hidden=!chk('fbDesktop');
+  document.getElementById('fbHint').textContent = anyDrawer
+    ? 'Whenever the button is off at a breakpoint, the filters render inline instead — they can never become unreachable.'
+    : 'Filters always render inline. Below the breakpoint they stack.';
+
+  document.getElementById('customStyles').hidden=chk('inhAll');
+  document.getElementById('rowText').hidden=chk('inhText');
+  document.getElementById('rowAccent').hidden=chk('inhAccent');
+  document.getElementById('rowBorder').hidden=chk('inhBorder');
+  document.getElementById('rowBorderOp').hidden=!chk('inhBorder');
+  document.getElementById('rowMuted').hidden=chk('inhMuted');
+  document.getElementById('rowActive').hidden=chk('inhActive');
+  document.getElementById('rowPanel').hidden=chk('inhPanel');
+  document.getElementById('rowSidebarBg').hidden=!chk('sidebarBgOn');
+  document.getElementById('rowSidebarPad').hidden=!chk('sidebarBgOn');
+
+  document.getElementById('rowSearchPh').hidden=!chk('searchEnabled');
+  ['rowSortPh','rowSortOptions','rowSortDefault','rowSortField'].forEach(id=>{
+    document.getElementById(id).hidden=!chk('sortEnabled');
+  });
+
+  document.getElementById('rowAnimSpeed').hidden=val('animType')==='none';
+  document.getElementById('rowAnimStagger').hidden=val('animType')==='none';
+  document.getElementById('rowAnimDur').hidden=!(val('animType')!=='none'&&val('animSpeed')==='custom');
+
+  renderPreview();renderCode();renderUrl();
+}
+
+renderGroups();renderDisplay();renderSortOptions();sync();
 </script>
 </body>
 </html>

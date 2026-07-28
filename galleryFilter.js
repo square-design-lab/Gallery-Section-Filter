@@ -52,8 +52,18 @@
     // [{ type:'auto' }] discovers one group per caption key.
     groups: [{ type: 'auto' }],
 
+    // Global option presentation, mirroring Shop Filter. Per-group `ui`
+    // overrides `optionStyle` for one group.
+    display: {
+      container: 'dropdown',   // 'dropdown' | 'inline'
+      optionStyle: 'checkbox', // 'checkbox' | 'buttons' | 'text'
+      showLabel: true,
+      pillRadius: 999,
+      delimiter: 'pipe'
+    },
+
     autoGroups: {
-      defaultUi: 'pills',
+      defaultUi: '',
       multiSelect: true,
       showCounts: false,
       collapsed: false,
@@ -75,13 +85,17 @@
       showOnDesktop: false,
       showOnMobile: true,
       showCount: true,
-      side: 'left'
+      side: 'left',
+      // Desktop with the button on: hide the inline groups so the drawer is
+      // the only route in. Ignored on mobile, where the button already wins.
+      hideGroupsOnDesktop: false
     },
 
     showAllOption: true,
     showCounts: false,
     disableZeroOptions: true,
     showResultCount: false,
+    showActiveChips: false,
     showClearAll: true,
 
     search: { enabled: false, placeholder: 'Search' },
@@ -110,6 +124,7 @@
       clearAll: 'Clear all',
       resultCount: '{n} of {total}',
       noResults: 'No images match these filters.',
+      noResultsReset: 'Clear all filters',
       sortPlaceholder: 'Sort'
     },
 
@@ -547,6 +562,14 @@
     return field;
   }
 
+  // Named separators for the `text` option style; anything else is used
+  // literally, so a site can pass "·" or " — " directly.
+  var DELIMS = { pipe: '|', space: ' ', comma: ',', slash: '/', dot: '·', dash: '–' };
+  function delimiterString(d) {
+    if (d == null || d === '') return '|';
+    return DELIMS[d] !== undefined ? DELIMS[d] : String(d);
+  }
+
   function buildTaxonomy(inst) {
     // Discovered field order = order of first appearance across the section.
     var discovered = [];
@@ -600,16 +623,19 @@
         (ag2.allText ? String(ag2.allText).replace(/\{field\}/g, labelFor(field, g)) : '') ||
         CONFIG.text.allText;
 
+      var D = CONFIG.display || {};
+      var STYLE_UI = { checkbox: 'checkbox', buttons: 'pills', text: 'text', chips: 'chips' };
+
       return {
         key: 'g' + (i + 1),
         field: field,
         label: labelFor(field, g),
-        showLabel: g.showLabel !== false,
-        ui: g.ui || ag2.defaultUi || 'pills',
+        showLabel: g.showLabel !== undefined ? g.showLabel : (D.showLabel !== false),
+        ui: g.ui || ag2.defaultUi || STYLE_UI[D.optionStyle] || 'checkbox',
         multiSelect: g.multiSelect !== undefined ? g.multiSelect : (ag2.multiSelect !== false),
         showCounts: g.showCounts !== undefined ? g.showCounts : (ag2.showCounts !== undefined ? ag2.showCounts : CONFIG.showCounts),
         collapsed: g.collapsed !== undefined ? g.collapsed : !!ag2.collapsed,
-        delimiter: g.delimiter || '/',
+        delimiter: delimiterString(g.delimiter || D.delimiter),
         allText: allText,
         values: values,
         nodes: []
@@ -995,6 +1021,11 @@
         .replace('{n}', visible.length)
         .replace('{total}', inst.items.length);
     }
+    if (inst.els.applyBtn) {
+      inst.els.applyBtn.textContent = CONFIG.text.apply
+        .replace('{n}', visible.length)
+        .replace('{total}', inst.items.length);
+    }
     if (inst.els.empty) inst.els.empty.hidden = visible.length > 0;
 
     if (CONFIG.urlSync && animate) writeUrl(inst);
@@ -1149,30 +1180,139 @@
     return node;
   }
 
-  function buildGroup(inst, g, inPanel) {
-    var box = el('div', NS + '-group ' + NS + '-group-' + g.ui);
-    box.setAttribute('data-field', slug(g.field));
-
-    if (g.showLabel) box.appendChild(el('div', NS + '-group-label', g.label));
-
+  // The option list on its own, shared by every container.
+  function buildOptionList(inst, g) {
     var list = el('div', NS + '-options ' + NS + '-options-' + g.ui);
     if (!g.showCounts) list.classList.add(NS + '-no-counts');
 
+    // "All" has no meaning next to checkboxes — clearing them is the same act.
     if (CONFIG.showAllOption && g.ui !== 'checkbox') {
       list.appendChild(buildOption(inst, g, ALL, true));
     }
 
     g.values.forEach(function (v) {
-      var node = buildOption(inst, g, v, false);
       if (g.ui === 'text' && list.children.length) {
-        var d = el('span', NS + '-delim', ' ' + g.delimiter + ' ');
-        list.appendChild(d);
+        list.appendChild(el('span', NS + '-delim' + (/^[,.;:]$/.test(g.delimiter) ? ' ' + NS + '-delim-tight' : ''), g.delimiter));
       }
-      list.appendChild(node);
+      list.appendChild(buildOption(inst, g, v, false));
+    });
+    return list;
+  }
+
+  function caret() {
+    var s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    s.setAttribute('viewBox', '0 0 24 24');
+    s.setAttribute('class', NS + '-caret');
+    s.setAttribute('width', '11');
+    s.setAttribute('height', '11');
+    s.setAttribute('fill', 'none');
+    s.setAttribute('stroke', 'currentColor');
+    s.setAttribute('stroke-width', '2.5');
+    s.setAttribute('stroke-linecap', 'round');
+    var p = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+    p.setAttribute('points', '6 9 12 15 18 9');
+    s.appendChild(p);
+    return s;
+  }
+
+  /* Three containers:
+     'bar'    — toolbar. Dropdown button + animated panel, or inline.
+     'side'   — sidebar accordion.
+     'drawer' — drawer accordion.
+     Sidebar and drawer are always accordions: a dropdown inside a narrow
+     column would open over its own siblings. */
+  function buildGroup(inst, g, context) {
+    context = context || 'bar';
+    var D = CONFIG.display || {};
+
+    if (context === 'bar' && D.container !== 'inline') {
+      return buildDropdownGroup(inst, g);
+    }
+    if (context === 'side' || context === 'drawer') {
+      return buildAccordionGroup(inst, g);
+    }
+
+    var box = el('div', NS + '-group ' + NS + '-group-' + g.ui);
+    box.setAttribute('data-field', slug(g.field));
+    if (g.showLabel) box.appendChild(el('div', NS + '-group-label', g.label));
+    box.appendChild(buildOptionList(inst, g));
+    return box;
+  }
+
+  function buildDropdownGroup(inst, g) {
+    var box = el('div', NS + '-dd');
+    box.setAttribute('data-field', slug(g.field));
+
+    var btn = el('button', NS + '-dd-btn');
+    btn.type = 'button';
+    btn.setAttribute('aria-expanded', 'false');
+    btn.appendChild(el('span', NS + '-dd-label', g.label));
+    var badge = el('span', NS + '-dd-badge');
+    badge.hidden = true;
+    btn.appendChild(badge);
+    btn.appendChild(caret());
+
+    // Structure is panel (clips) > inner (scrolls) > body (pads). Padding on
+    // the clipping element shows as a sliver while collapsed.
+    var panel = el('div', NS + '-dd-panel');
+    var inner = el('div', NS + '-dd-inner');
+    var body = el('div', NS + '-dd-body');
+    body.appendChild(buildOptionList(inst, g));
+    inner.appendChild(body);
+    panel.appendChild(inner);
+
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var open = box.classList.contains(NS + '-dd-open');
+      closeAllDropdowns();
+      if (!open) {
+        box.classList.add(NS + '-dd-open');
+        btn.setAttribute('aria-expanded', 'true');
+      }
     });
 
-    box.appendChild(list);
+    box.appendChild(btn);
+    box.appendChild(panel);
+    g._ddBtn = g._ddBtn || [];
+    g._ddBtn.push({ btn: btn, badge: badge, box: box });
     return box;
+  }
+
+  function buildAccordionGroup(inst, g) {
+    var box = el('div', NS + '-acc');
+    box.setAttribute('data-field', slug(g.field));
+    if (g.collapsed) box.classList.add(NS + '-acc-closed');
+
+    var head = el('button', NS + '-acc-head');
+    head.type = 'button';
+    head.setAttribute('aria-expanded', g.collapsed ? 'false' : 'true');
+    head.appendChild(el('span', '', g.label));
+    var badge = el('span', NS + '-acc-badge');
+    badge.hidden = true;
+    head.appendChild(badge);
+    head.appendChild(caret());
+
+    var body = el('div', NS + '-acc-body');
+    body.appendChild(buildOptionList(inst, g));
+
+    head.addEventListener('click', function () {
+      var closed = box.classList.toggle(NS + '-acc-closed');
+      head.setAttribute('aria-expanded', closed ? 'false' : 'true');
+    });
+
+    box.appendChild(head);
+    box.appendChild(body);
+    g._accBadges = g._accBadges || [];
+    g._accBadges.push(badge);
+    return box;
+  }
+
+  function closeAllDropdowns() {
+    $$('.' + NS + '-dd-open').forEach(function (n) {
+      n.classList.remove(NS + '-dd-open');
+      var b = $('.' + NS + '-dd-btn', n);
+      if (b) b.setAttribute('aria-expanded', 'false');
+    });
   }
 
   function buildBar(inst) {
@@ -1180,7 +1320,8 @@
     var bar = el('div', NS + '-bar ' + NS + '-align-' + CONFIG.align);
 
     var groupsWrap = el('div', NS + '-inline-groups');
-    inst.groups.forEach(function (g) { groupsWrap.appendChild(buildGroup(inst, g)); });
+    if ((CONFIG.display || {}).container !== 'inline') groupsWrap.classList.add(NS + '-dd-row');
+    inst.groups.forEach(function (g) { groupsWrap.appendChild(buildGroup(inst, g, 'bar')); });
     bar.appendChild(groupsWrap);
     inst.els.inlineGroups = groupsWrap;
 
@@ -1216,10 +1357,10 @@
       inst.els.sort = sel;
     }
 
+    // Built here but placed in the meta row below, not in the toolbar.
     if (CONFIG.showResultCount) {
       var c = el('span', NS + '-count');
       c.setAttribute('role', 'status');
-      right.appendChild(c);
       inst.els.count = c;
     }
 
@@ -1228,7 +1369,6 @@
       clear.type = 'button';
       clear.hidden = true;
       clear.addEventListener('click', function () { resetAll(inst); });
-      right.appendChild(clear);
       inst.els.clear = clear;
     }
 
@@ -1245,13 +1385,61 @@
 
     if (right.children.length) bar.appendChild(right);
     root.appendChild(bar);
+
+    // Second row: result count, active-filter chips, Clear all.
+    if (CONFIG.showResultCount || CONFIG.showActiveChips || CONFIG.showClearAll) {
+      var meta = el('div', NS + '-meta');
+      if (inst.els.count) meta.appendChild(inst.els.count);
+      if (CONFIG.showActiveChips) {
+        var chips = el('div', NS + '-chips');
+        meta.appendChild(chips);
+        inst.els.chips = chips;
+      }
+      if (inst.els.clear) meta.appendChild(inst.els.clear);
+      root.appendChild(meta);
+      inst.els.meta = meta;
+    }
     return root;
+  }
+
+  function renderChips(inst) {
+    var host = inst.els.chips;
+    if (!host) return;
+    host.innerHTML = '';
+    inst.groups.forEach(function (g) {
+      (inst.active[g.key] || []).forEach(function (v) {
+        var b = el('button', NS + '-chip');
+        b.type = 'button';
+        b.appendChild(el('span', '', v.split(' > ').pop()));
+        b.appendChild(el('span', NS + '-chip-x', '×'));
+        b.setAttribute('aria-label', 'Remove ' + v);
+        b.addEventListener('click', function () {
+          var arr = inst.active[g.key];
+          var i = arr.indexOf(v);
+          if (i !== -1) arr.splice(i, 1);
+          apply(inst, true);
+        });
+        host.appendChild(b);
+      });
+    });
+    if (inst.query) {
+      var q = el('button', NS + '-chip');
+      q.type = 'button';
+      q.appendChild(el('span', '', '“' + inst.query + '”'));
+      q.appendChild(el('span', NS + '-chip-x', '×'));
+      q.addEventListener('click', function () {
+        inst.query = '';
+        if (inst.els.search) inst.els.search.value = '';
+        apply(inst, true);
+      });
+      host.appendChild(q);
+    }
   }
 
   function buildSidebar(inst) {
     var side = el('aside', NS + '-sidebar');
     if (CONFIG.stickySidebar) side.classList.add(NS + '-sticky');
-    inst.groups.forEach(function (g) { side.appendChild(buildGroup(inst, g)); });
+    inst.groups.forEach(function (g) { side.appendChild(buildGroup(inst, g, 'side')); });
     if (CONFIG.showClearAll) {
       var clear = el('button', NS + '-clear ' + NS + '-clear-side', CONFIG.text.clearAll);
       clear.type = 'button';
@@ -1281,7 +1469,7 @@
     drawer.appendChild(head);
 
     var body = el('div', NS + '-drawer-body');
-    inst.groups.forEach(function (g) { body.appendChild(buildGroup(inst, g, true)); });
+    inst.groups.forEach(function (g) { body.appendChild(buildGroup(inst, g, 'drawer')); });
     drawer.appendChild(body);
 
     var foot = el('div', NS + '-drawer-foot');
@@ -1291,6 +1479,7 @@
     var applyBtn = el('button', NS + '-drawer-apply', CONFIG.text.apply);
     applyBtn.type = 'button';
     applyBtn.addEventListener('click', function () { closeDrawer(inst); });
+    inst.els.applyBtn = applyBtn;
     foot.appendChild(clear);
     foot.appendChild(applyBtn);
     drawer.appendChild(foot);
@@ -1328,6 +1517,18 @@
   function syncControls(inst) {
     inst.groups.forEach(function (g) {
       var act = inst.active[g.key];
+
+      // Dropdown / accordion count badges
+      (g._ddBtn || []).forEach(function (d) {
+        d.badge.hidden = !act.length;
+        d.badge.textContent = act.length;
+        d.box.classList.toggle(NS + '-dd-active', !!act.length);
+      });
+      (g._accBadges || []).forEach(function (b) {
+        b.hidden = !act.length;
+        b.textContent = act.length;
+      });
+
       g.nodes.forEach(function (n) {
         var on = n.isAll ? !act.length : act.indexOf(n.value) !== -1;
         n.node.classList.toggle(NS + '-opt-on', on);
@@ -1349,6 +1550,8 @@
     });
 
     var total = activeTotal(inst) + (inst.query ? 1 : 0);
+    renderChips(inst);
+    if (inst.els.meta) inst.els.meta.hidden = !CONFIG.showResultCount && !total;
     if (inst.els.clear) inst.els.clear.hidden = !total;
     if (inst.els.sideClear) inst.els.sideClear.hidden = !total;
     if (inst.els.filterBtnCount) {
@@ -1371,9 +1574,16 @@
     if (inst.els.shell) inst.els.shell.classList.toggle(NS + '-mobile', !desktop);
     if (inst.els.sidebar) inst.els.sidebar.hidden = !desktop;
     if (inst.els.filterBtn) inst.els.filterBtn.hidden = !btn;
-    // The filters must never become unreachable: whenever the drawer button is
-    // off at this breakpoint, the inline groups render instead.
-    if (inst.els.inlineGroups) inst.els.inlineGroups.hidden = btn && !desktop;
+
+    // The filters must never become unreachable. On mobile the button always
+    // replaces the inline groups; on desktop it only does so when the config
+    // explicitly asks ("button only"). Whenever the button is off, the groups
+    // come back regardless.
+    if (inst.els.inlineGroups) {
+      var hideInline = btn && (!desktop || (CONFIG.filterButton || {}).hideGroupsOnDesktop === true);
+      if (CONFIG.layout === 'sidebar') hideInline = true;
+      inst.els.inlineGroups.hidden = hideInline;
+    }
     if (!desktop && !btn && inst.els.sidebar) inst.els.sidebar.hidden = false;
   }
 
@@ -1404,7 +1614,14 @@
       inst.els.root = root;
     }
 
-    var empty = el('div', NS + '-empty', CONFIG.text.noResults);
+    var empty = el('div', NS + '-empty');
+    empty.appendChild(el('p', NS + '-empty-text', CONFIG.text.noResults));
+    if (CONFIG.showClearAll !== false) {
+      var reset = el('button', NS + '-empty-reset', CONFIG.text.noResultsReset);
+      reset.type = 'button';
+      reset.addEventListener('click', function () { resetAll(inst); });
+      empty.appendChild(reset);
+    }
     empty.hidden = true;
     inst.wrap.parentElement.insertBefore(empty, inst.wrap.nextSibling);
     inst.els.empty = empty;
@@ -1454,8 +1671,14 @@
       }, 150);
     });
 
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest || !e.target.closest('.' + NS + '-dd')) closeAllDropdowns();
+    });
+
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') instances.forEach(closeDrawer);
+      if (e.key !== 'Escape') return;
+      closeAllDropdowns();
+      instances.forEach(closeDrawer);
     });
 
     // Squarespace lazily reveals gallery items with a fade; once that settles

@@ -255,6 +255,10 @@ html.sdl-gf-ready .sdl-gf-anim-run {
   user-select: none;
 }
 
+/* Punctuation hugs the word it follows — "Classic, Vintage", not
+   "Classic , Vintage". */
+.sdl-gf-delim-tight { padding-left: 0; }
+
 /* checkbox */
 .sdl-gf-opt-checkbox {
   padding: 5px 0;
@@ -277,6 +281,172 @@ html.sdl-gf-ready .sdl-gf-anim-run {
 .sdl-gf-options-checkbox .sdl-gf-opt-child { padding-left: 20px; }
 .sdl-gf-options-pills .sdl-gf-opt-child,
 .sdl-gf-options-chips .sdl-gf-opt-child { font-size: .94em; }
+
+/* ------------------------------------------------------------------ */
+/*  DROPDOWNS                                                          */
+/* ------------------------------------------------------------------ */
+
+.sdl-gf-dd-row { gap: var(--sdl-gf-gap, 10px); align-items: center; }
+
+.sdl-gf-dd { position: relative; }
+
+.sdl-gf-dd-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--sdl-gf-border, currentColor);
+  border-radius: var(--sdl-gf-radius, 6px);
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: border-color .18s ease;
+}
+
+.sdl-gf-dd-btn:hover { border-color: var(--sdl-gf-accent, currentColor); }
+.sdl-gf-dd-btn:focus-visible { outline: 2px solid var(--sdl-gf-accent, currentColor); outline-offset: 2px; }
+
+.sdl-gf-dd-active .sdl-gf-dd-btn {
+  border-color: var(--sdl-gf-accent, currentColor);
+  box-shadow: inset 0 0 0 1px var(--sdl-gf-accent, currentColor);
+}
+
+.sdl-gf-dd-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  font-size: 11px;
+  background: var(--sdl-gf-accent, currentColor);
+  color: var(--sdl-gf-on-accent, #fff);
+}
+
+.sdl-gf-caret { flex: none; transition: transform .18s ease; }
+.sdl-gf-dd-open .sdl-gf-dd-btn .sdl-gf-caret { transform: rotate(180deg); }
+
+/* The panel animates its own height, so the outer element clips and the
+   inner track is what actually collapses (needs min-height:0). Padding on
+   the clipping element would show as a sliver while collapsed. */
+.sdl-gf-dd-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 40;
+  min-width: 210px;
+  max-width: 320px;
+  background: var(--sdl-gf-panel-bg, #fff);
+  border: 1px solid var(--sdl-gf-border, #dcdcdc);
+  border-radius: var(--sdl-gf-radius, 6px);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, .10);
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transform: translateY(-4px);
+  visibility: hidden;
+  transition: grid-template-rows .28s cubic-bezier(.22, .61, .36, 1),
+              opacity .18s ease,
+              transform .28s cubic-bezier(.22, .61, .36, 1),
+              visibility 0s linear .28s;
+}
+
+.sdl-gf-dd-open .sdl-gf-dd-panel {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transform: none;
+  visibility: visible;
+  transition: grid-template-rows .28s cubic-bezier(.22, .61, .36, 1),
+              opacity .18s ease,
+              transform .28s cubic-bezier(.22, .61, .36, 1),
+              visibility 0s;
+}
+
+.sdl-gf-dd-inner { min-height: 0; overflow-y: auto; max-height: 320px; }
+.sdl-gf-dd-body { padding: 12px 14px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sdl-gf-dd-panel { transition: none !important; }
+}
+
+/* ------------------------------------------------------------------ */
+/*  ACCORDIONS (sidebar + drawer)                                      */
+/* ------------------------------------------------------------------ */
+
+.sdl-gf-acc { border-bottom: 1px solid var(--sdl-gf-border, currentColor); }
+.sdl-gf-acc:last-child { border-bottom: 0; }
+
+.sdl-gf-acc-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 0;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  font-weight: 600;
+}
+
+.sdl-gf-acc-head > span:first-child { flex: 1 1 auto; }
+.sdl-gf-acc-head .sdl-gf-caret { transition: transform .2s ease; }
+.sdl-gf-acc-closed .sdl-gf-acc-head .sdl-gf-caret { transform: rotate(-90deg); }
+
+.sdl-gf-acc-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  font-size: 11px;
+  background: var(--sdl-gf-accent, currentColor);
+  color: var(--sdl-gf-on-accent, #fff);
+}
+
+.sdl-gf-acc-body { padding: 0 0 14px; }
+.sdl-gf-acc-closed .sdl-gf-acc-body { display: none; }
+
+/* ------------------------------------------------------------------ */
+/*  META ROW — count, active chips, clear                              */
+/* ------------------------------------------------------------------ */
+
+.sdl-gf-meta {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  font-size: .93em;
+}
+
+.sdl-gf-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+
+.sdl-gf-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font: inherit;
+  font-size: .92em;
+  color: inherit;
+  background: var(--sdl-gf-chip-bg, rgba(0, 0, 0, .06));
+  border: 0;
+  border-radius: 999px;
+  padding: 4px 11px;
+  cursor: pointer;
+}
+
+.sdl-gf-chip:hover { background: var(--sdl-gf-accent, currentColor); color: var(--sdl-gf-on-accent, #fff); }
+.sdl-gf-chip-x { opacity: .65; font-size: 1.1em; line-height: 1; }
+
+.sdl-gf-meta .sdl-gf-clear { margin-left: auto; }
 
 /* ------------------------------------------------------------------ */
 /*  SEARCH / SORT / COUNT / CLEAR                                      */
@@ -315,9 +485,26 @@ html.sdl-gf-ready .sdl-gf-anim-run {
 .sdl-gf-clear:hover { color: var(--sdl-gf-accent, currentColor); }
 
 .sdl-gf-empty {
-  padding: 48px 0;
+  padding: 50px 20px;
   text-align: center;
   color: var(--sdl-gf-muted, currentColor);
+}
+
+.sdl-gf-empty-text { margin: 0 0 14px; }
+
+.sdl-gf-empty-reset {
+  font: inherit;
+  color: var(--sdl-gf-accent, currentColor);
+  background: none;
+  border: 1px solid var(--sdl-gf-accent, currentColor);
+  border-radius: var(--sdl-gf-radius, 6px);
+  padding: 9px 18px;
+  cursor: pointer;
+}
+
+.sdl-gf-empty-reset:hover {
+  background: var(--sdl-gf-accent, currentColor);
+  color: var(--sdl-gf-on-accent, #fff);
 }
 
 /* ------------------------------------------------------------------ */
