@@ -951,7 +951,17 @@
       var ok = matches(inst, it, null);
       it.visible = ok;
       it.el.classList.toggle(NS + '-hidden', !ok);
-      if (ok) visible.push(it);
+      if (ok) {
+        // Squarespace fades gallery items in with `preFade` (opacity 0) and
+        // adds `fadeIn` from a scroll observer. An item that was hidden when
+        // that observer would have fired never gets `fadeIn`, so revealing it
+        // by filtering would leave it permanently invisible. Verified live:
+        // one matching image rendered at opacity 0 after a filter change.
+        if (it.wrapper && it.wrapper.classList.contains('preFade')) {
+          it.wrapper.classList.add('fadeIn');
+        }
+        visible.push(it);
+      }
     });
 
     // Sort changes DOM order for grid (CSS grid honours source order) and
