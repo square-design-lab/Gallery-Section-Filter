@@ -12,15 +12,17 @@
 .sdl-gf-sidebar,
 .sdl-gf-drawer,
 .sdl-gf-empty {
-  font-family: inherit;
+  font-family: var(--sdl-gf-font, inherit);
   font-size: var(--sdl-gf-fs, 14px);
   color: var(--sdl-gf-text, inherit);
   line-height: 1.4;
-  letter-spacing: inherit;
+  letter-spacing: var(--sdl-gf-ls, normal);
 }
 
-/* The drawer is a child of <body>, outside the section, so it has to be
-   given the section's surface colour explicitly. */
+/* The drawer is a child of <body>, outside the section, so `inherit` would
+   give it the body's font and colour rather than the gallery's. The script
+   resolves --sdl-gf-font / --ls / --text / --panel-bg from the section and
+   scopes them to the drawer by instance id. */
 .sdl-gf-drawer {
   background: var(--sdl-gf-panel-bg, #fff);
 }

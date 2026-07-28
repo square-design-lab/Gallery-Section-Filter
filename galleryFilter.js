@@ -383,7 +383,14 @@
 
     var accent = pick(S.accent, rgba(bodyRgb, 1));
     var vars = {};
-    vars['text'] = S.textColor || 'inherit';
+    // The drawer is a child of <body>, outside the section, so `inherit` gives
+    // it the *body* font and colour rather than the gallery's. Squarespace
+    // sections routinely differ from body — this site renders Inter in the
+    // section and sans-serif on body. Resolving them here keeps the drawer
+    // identical to the inline bar.
+    vars['font'] = cs.fontFamily || 'inherit';
+    vars['ls'] = cs.letterSpacing && cs.letterSpacing !== 'normal' ? cs.letterSpacing : 'normal';
+    vars['text'] = S.textColor || cs.color || 'inherit';
     vars['accent'] = accent;
     vars['accent-solid'] = accent;
     vars['on-accent'] = contrastOn(accent);
