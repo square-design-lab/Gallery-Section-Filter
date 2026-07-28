@@ -1014,7 +1014,7 @@ function buildConfig(){
   if(display.container!=='dropdown')d.container=display.container;
   if(display.optionStyle!=='checkbox')d.optionStyle=display.optionStyle;
   if(display.container==='inline'&&display.showLabel===false)d.showLabel=false;
-  if(display.optionStyle==='buttons'&&display.pillRadius!==999)d.pillRadius=display.pillRadius;
+  // pillRadius is emitted under `styles` only — that's where the plugin reads it.
   if(display.optionStyle==='text'&&display.delimiter!=='pipe')d.delimiter=display.delimiter;
   if(Object.keys(d).length)c.display=d;
 

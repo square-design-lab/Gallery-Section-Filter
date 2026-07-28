@@ -120,7 +120,10 @@
       allText: 'All',
       filterButton: 'Filters',
       drawerTitle: 'Filters',
-      apply: 'Show results',
+      // {n} / {total} are substituted, so the drawer's apply button can read
+      // "Show 2 results". Kept in step with the config generator's default —
+      // when the two differ the generator omits the key and the count is lost.
+      apply: 'Show {n} results',
       clearAll: 'Clear all',
       resultCount: '{n} of {total}',
       noResults: 'No images match these filters.',
