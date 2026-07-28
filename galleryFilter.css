@@ -1,0 +1,488 @@
+/* ------------------------------------------------------------------ */
+/*  SDL Gallery Filter v1.0                                           */
+/*  Namespace: .sdl-gf-*   CSS vars injected by galleryFilter.js      */
+/*                                                                    */
+/*  Nothing here sets a font-family or a hard-coded colour: the root   */
+/*  inherits the site's typography, and every colour resolves from a   */
+/*  variable the script derives from the section's own computed text   */
+/*  colour. Drop the plugin on any template and it takes the theme.    */
+/* ------------------------------------------------------------------ */
+
+.sdl-gf-root,
+.sdl-gf-sidebar,
+.sdl-gf-drawer,
+.sdl-gf-empty {
+  font-family: inherit;
+  font-size: var(--sdl-gf-fs, 14px);
+  color: var(--sdl-gf-text, inherit);
+  line-height: 1.4;
+  letter-spacing: inherit;
+}
+
+/* The drawer is a child of <body>, outside the section, so it has to be
+   given the section's surface colour explicitly. */
+.sdl-gf-drawer {
+  background: var(--sdl-gf-panel-bg, #fff);
+}
+
+/* Our own display rules would otherwise beat the [hidden] attribute. */
+.sdl-gf-root [hidden],
+.sdl-gf-sidebar [hidden],
+.sdl-gf-drawer [hidden] { display: none !important; }
+
+/* Some 7.1 themes make the gallery's parent a multi-column grid; anything
+   inserted as a child would be confined to one column. */
+.sdl-gf-root,
+.sdl-gf-shell,
+.sdl-gf-empty {
+  grid-column: 1 / -1;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sdl-gf-root { margin-bottom: var(--sdl-gf-mb, 32px); }
+
+/* ------------------------------------------------------------------ */
+/*  FILTERED-OUT ITEMS                                                 */
+/* ------------------------------------------------------------------ */
+
+.sdl-gf-hidden { display: none !important; }
+
+/* Managed layouts: the script writes transform/width, so animate them. */
+.sdl-gf-managed.sdl-gf-animate > * {
+  transition: transform .42s cubic-bezier(.22, .61, .36, 1),
+              width .42s cubic-bezier(.22, .61, .36, 1);
+}
+
+.sdl-gf-managed { transition: height .42s cubic-bezier(.22, .61, .36, 1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .sdl-gf-managed,
+  .sdl-gf-managed.sdl-gf-animate > * { transition: none !important; }
+}
+
+/* ------------------------------------------------------------------ */
+/*  ENTRY ANIMATION                                                    */
+/* ------------------------------------------------------------------ */
+
+.sdl-gf-anim-run { animation-delay: var(--sdl-gf-anim-delay, 0ms); }
+
+html.sdl-gf-ready .sdl-gf-anim-run {
+  animation-duration: var(--sdl-gf-anim-dur, 420ms);
+  animation-fill-mode: both;
+}
+
+.sdl-gf-anim-fade.sdl-gf-anim-run { animation-name: sdl-gf-fade; animation-timing-function: ease; }
+.sdl-gf-anim-run { animation-name: sdl-gf-fade; animation-timing-function: ease; }
+
+@keyframes sdl-gf-fade { from { opacity: 0 } to { opacity: 1 } }
+@keyframes sdl-gf-slide-up { from { opacity: 0; transform: translateY(12px) } to { opacity: 1; transform: none } }
+@keyframes sdl-gf-zoom { from { opacity: 0; transform: scale(.96) } to { opacity: 1; transform: none } }
+
+@media (prefers-reduced-motion: reduce) {
+  .sdl-gf-anim-run { animation: none !important; }
+}
+
+/* ------------------------------------------------------------------ */
+/*  CAPTIONS                                                           */
+/* ------------------------------------------------------------------ */
+
+.sdl-gf-cap-hidden { display: none !important; }
+
+/* ------------------------------------------------------------------ */
+/*  TOOLBAR                                                            */
+/* ------------------------------------------------------------------ */
+
+.sdl-gf-bar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sdl-gf-gap, 10px);
+  width: 100%;
+}
+
+.sdl-gf-align-center .sdl-gf-inline-groups { justify-content: center; }
+.sdl-gf-align-right  .sdl-gf-inline-groups { justify-content: flex-end; }
+.sdl-gf-align-center { justify-content: center; }
+
+.sdl-gf-bar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--sdl-gf-gap, 10px);
+  flex: none;
+}
+
+.sdl-gf-inline-groups {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: calc(var(--sdl-gf-gap, 10px) * 2);
+  flex: 1 1 auto;
+}
+
+.sdl-gf-sticky-bar {
+  position: sticky;
+  top: var(--sdl-gf-sticky-top, 20px);
+  z-index: 20;
+  background: var(--sdl-gf-panel-bg, #fff);
+  padding: 10px 0;
+}
+
+/* ------------------------------------------------------------------ */
+/*  GROUPS                                                             */
+/* ------------------------------------------------------------------ */
+
+.sdl-gf-group { display: flex; flex-direction: column; gap: 6px; }
+
+/* The label sits above the values so a long value list wraps under its
+   heading instead of pushing it off to the side. */
+.sdl-gf-group-label {
+  font-size: .85em;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--sdl-gf-muted, currentColor);
+}
+
+.sdl-gf-options { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.sdl-gf-options-checkbox { flex-direction: column; align-items: stretch; gap: 2px; }
+.sdl-gf-options-text { gap: 0; }
+
+.sdl-gf-no-counts .sdl-gf-opt-count { display: none; }
+
+/* ------------------------------------------------------------------ */
+/*  OPTIONS                                                            */
+/* ------------------------------------------------------------------ */
+
+.sdl-gf-opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  transition: color .18s ease, background-color .18s ease, border-color .18s ease;
+}
+
+.sdl-gf-opt:focus-visible {
+  outline: 2px solid var(--sdl-gf-accent, currentColor);
+  outline-offset: 2px;
+}
+
+.sdl-gf-opt-count {
+  font-size: .82em;
+  opacity: .7;
+  color: var(--sdl-gf-muted, currentColor);
+}
+
+.sdl-gf-opt-count:empty { display: none; }
+
+.sdl-gf-opt-disabled {
+  opacity: .35;
+  pointer-events: none;
+}
+
+/* pills */
+.sdl-gf-opt-pills {
+  padding: 7px 14px;
+  border: 1px solid var(--sdl-gf-border, currentColor);
+  border-radius: var(--sdl-gf-pill-radius, 999px);
+  background: transparent;
+}
+
+.sdl-gf-opt-pills:hover { border-color: var(--sdl-gf-accent, currentColor); }
+
+.sdl-gf-opt-pills.sdl-gf-opt-on {
+  background: var(--sdl-gf-accent, currentColor);
+  border-color: var(--sdl-gf-accent, currentColor);
+  color: var(--sdl-gf-on-accent, #fff);
+}
+
+/* The count is muted-on-page-background by default, which vanishes once the
+   pill fills with the accent — both are derived from the body text colour. */
+.sdl-gf-opt-pills.sdl-gf-opt-on .sdl-gf-opt-count {
+  color: var(--sdl-gf-on-accent, #fff);
+  opacity: .75;
+}
+
+/* chips */
+.sdl-gf-opt-chips {
+  padding: 6px 12px;
+  border: 1px solid var(--sdl-gf-border, currentColor);
+  border-radius: var(--sdl-gf-radius, 6px);
+  background: var(--sdl-gf-chip-bg, transparent);
+}
+
+.sdl-gf-opt-chips.sdl-gf-opt-on {
+  background: var(--sdl-gf-accent, currentColor);
+  border-color: var(--sdl-gf-accent, currentColor);
+  color: var(--sdl-gf-on-accent, #fff);
+}
+
+.sdl-gf-opt-chips.sdl-gf-opt-on .sdl-gf-opt-count {
+  color: var(--sdl-gf-on-accent, #fff);
+  opacity: .75;
+}
+
+/* text — plain values with a delimiter, like a native nav row */
+.sdl-gf-opt-text {
+  padding: 2px 0;
+  opacity: .7;
+}
+
+.sdl-gf-opt-text:hover { opacity: 1; }
+
+.sdl-gf-opt-text.sdl-gf-opt-on {
+  opacity: 1;
+  color: var(--sdl-gf-active, inherit);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/* Spacing lives on the delimiter, not the values, so punctuation can hug
+   the word it follows. */
+.sdl-gf-delim {
+  color: var(--sdl-gf-muted, currentColor);
+  opacity: .5;
+  padding: 0 .45em;
+  user-select: none;
+}
+
+/* checkbox */
+.sdl-gf-opt-checkbox {
+  padding: 5px 0;
+  gap: 8px;
+}
+
+.sdl-gf-opt-input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  flex: none;
+  /* accent-color will not accept currentColor, so the script resolves a
+     concrete value for it. */
+  accent-color: var(--sdl-gf-accent-solid, currentColor);
+}
+
+.sdl-gf-opt-checkbox .sdl-gf-opt-label { flex: 1 1 auto; }
+
+/* nested "Parent > Child" values indent under their parent */
+.sdl-gf-options-checkbox .sdl-gf-opt-child { padding-left: 20px; }
+.sdl-gf-options-pills .sdl-gf-opt-child,
+.sdl-gf-options-chips .sdl-gf-opt-child { font-size: .94em; }
+
+/* ------------------------------------------------------------------ */
+/*  SEARCH / SORT / COUNT / CLEAR                                      */
+/* ------------------------------------------------------------------ */
+
+.sdl-gf-search,
+.sdl-gf-sort {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--sdl-gf-border, currentColor);
+  border-radius: var(--sdl-gf-radius, 6px);
+  padding: 8px 12px;
+  max-width: 220px;
+}
+
+.sdl-gf-search:focus,
+.sdl-gf-sort:focus { outline: none; border-color: var(--sdl-gf-accent, currentColor); }
+
+.sdl-gf-count {
+  color: var(--sdl-gf-muted, currentColor);
+  white-space: nowrap;
+}
+
+.sdl-gf-clear {
+  font: inherit;
+  color: var(--sdl-gf-muted, currentColor);
+  background: none;
+  border: 0;
+  padding: 6px 4px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.sdl-gf-clear:hover { color: var(--sdl-gf-accent, currentColor); }
+
+.sdl-gf-empty {
+  padding: 48px 0;
+  text-align: center;
+  color: var(--sdl-gf-muted, currentColor);
+}
+
+/* ------------------------------------------------------------------ */
+/*  FILTER BUTTON                                                      */
+/* ------------------------------------------------------------------ */
+
+.sdl-gf-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--sdl-gf-border, currentColor);
+  border-radius: var(--sdl-gf-radius, 6px);
+  padding: 8px 16px;
+  cursor: pointer;
+}
+
+.sdl-gf-filter-btn-active { border-color: var(--sdl-gf-accent, currentColor); }
+
+.sdl-gf-filter-btn-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  font-size: 11px;
+  background: var(--sdl-gf-accent, currentColor);
+  color: var(--sdl-gf-on-accent, #fff);
+}
+
+/* ------------------------------------------------------------------ */
+/*  SIDEBAR                                                            */
+/* ------------------------------------------------------------------ */
+
+.sdl-gf-shell {
+  display: flex;
+  align-items: flex-start;
+  gap: 36px;
+}
+
+.sdl-gf-sidebar {
+  flex: 0 0 var(--sdl-gf-side-w, 25%);
+  width: var(--sdl-gf-side-w, 25%);
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  background: var(--sdl-gf-sidebar-bg, transparent);
+  padding: var(--sdl-gf-sidebar-pad, 0);
+  border-radius: var(--sdl-gf-radius, 6px);
+  box-sizing: border-box;
+}
+
+.sdl-gf-sidebar.sdl-gf-sticky {
+  position: sticky;
+  top: var(--sdl-gf-sticky-top, 20px);
+}
+
+.sdl-gf-main { flex: 1 1 auto; min-width: 0; }
+
+.sdl-gf-shell.sdl-gf-mobile { display: block; }
+.sdl-gf-shell.sdl-gf-mobile .sdl-gf-sidebar { width: 100%; }
+
+/* ------------------------------------------------------------------ */
+/*  DRAWER                                                             */
+/* ------------------------------------------------------------------ */
+
+.sdl-gf-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .45);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .3s ease, visibility 0s linear .3s;
+  z-index: 9998;
+}
+
+.sdl-gf-overlay.sdl-gf-open {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity .3s ease;
+}
+
+.sdl-gf-drawer {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  width: min(360px, 88vw);
+  display: flex;
+  flex-direction: column;
+  z-index: 9999;
+  transition: transform .32s cubic-bezier(.22, .61, .36, 1);
+  box-shadow: 0 0 40px rgba(0, 0, 0, .16);
+}
+
+.sdl-gf-drawer-left  { left: 0;  transform: translateX(-100%); }
+.sdl-gf-drawer-right { right: 0; transform: translateX(100%); }
+.sdl-gf-drawer.sdl-gf-open { transform: translateX(0); }
+
+.sdl-gf-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--sdl-gf-border, currentColor);
+}
+
+.sdl-gf-drawer-title { font-size: 1.1em; }
+
+.sdl-gf-drawer-close {
+  font: inherit;
+  font-size: 26px;
+  line-height: 1;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.sdl-gf-drawer-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+.sdl-gf-drawer-foot {
+  display: flex;
+  gap: 10px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--sdl-gf-border, currentColor);
+}
+
+.sdl-gf-drawer-clear {
+  flex: 0 0 auto;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 1px solid var(--sdl-gf-border, currentColor);
+  border-radius: var(--sdl-gf-radius, 6px);
+  padding: 10px 16px;
+  cursor: pointer;
+}
+
+.sdl-gf-drawer-apply {
+  flex: 1 1 auto;
+  font: inherit;
+  background: var(--sdl-gf-accent, currentColor);
+  color: var(--sdl-gf-on-accent, #fff);
+  border: 0;
+  border-radius: var(--sdl-gf-radius, 6px);
+  padding: 10px 16px;
+  cursor: pointer;
+}
+
+body.sdl-gf-locked { overflow: hidden; }
+
+/* ------------------------------------------------------------------ */
+/*  MOBILE                                                             */
+/* ------------------------------------------------------------------ */
+
+.sdl-gf-root.sdl-gf-mobile .sdl-gf-bar { align-items: stretch; }
+.sdl-gf-root.sdl-gf-mobile .sdl-gf-bar-right { width: 100%; justify-content: space-between; }
+.sdl-gf-root.sdl-gf-mobile .sdl-gf-search { max-width: none; flex: 1 1 auto; }
