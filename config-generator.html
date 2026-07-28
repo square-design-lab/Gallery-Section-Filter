@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SDL Gallery Filter — Config Generator</title>
+<style>
+  :root{
+    --bg:#f6f6f4; --panel:#fff; --ink:#16161a; --muted:#6b6b76;
+    --line:#e2e2dd; --accent:#16161a; --ok:#1a7f4b; --warn:#9a6b00; --warnbg:#fff8e6;
+    --r:8px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+  h1,h2,h3,h4{margin:0;font-weight:600;letter-spacing:-.01em}
+  a{color:inherit}
+
+  .app{display:grid;grid-template-columns:264px 1fr;min-height:100vh}
+
+  /* ---- nav ---- */
+  .nav{background:var(--panel);border-right:1px solid var(--line);padding:22px 0;position:sticky;top:0;height:100vh;overflow-y:auto}
+  .nav .brand{padding:0 22px 18px;border-bottom:1px solid var(--line);margin-bottom:14px}
+  .nav .brand h1{font-size:15px}
+  .nav .brand p{margin:4px 0 0;font-size:12px;color:var(--muted)}
+  .nav button{display:block;width:100%;text-align:left;padding:9px 22px;font:inherit;background:none;border:0;cursor:pointer;color:var(--muted)}
+  .nav button:hover{background:#fafaf8;color:var(--ink)}
+  .nav button.on{color:var(--ink);font-weight:600;box-shadow:inset 3px 0 0 var(--accent)}
+
+  /* ---- main ---- */
+  .main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:0}
+  .pane{padding:26px 28px;overflow-y:auto;max-height:100vh}
+  .preview-pane{background:#fff;border-left:1px solid var(--line);position:sticky;top:0}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;margin-bottom:16px}
+  .card > h3{font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:14px}
+
+  .row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:8px 0}
+  .row + .row{border-top:1px solid #f1f1ee}
+  .row label{flex:1 1 auto}
+  .row .hint{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+
+  input[type=text],input[type=number],select,textarea{
+    font:inherit;color:inherit;background:#fff;border:1px solid var(--line);
+    border-radius:6px;padding:7px 10px;min-width:0
+  }
+  input[type=text],select{width:190px}
+  input[type=number]{width:88px}
+  textarea{width:100%;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
+  input[type=color]{width:38px;height:28px;padding:0;border:1px solid var(--line);border-radius:6px;background:#fff}
+
+  .sw{position:relative;width:40px;height:22px;flex:none}
+  .sw input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer;z-index:2;width:100%;height:100%}
+  .sw i{position:absolute;inset:0;background:#d6d6d0;border-radius:999px;transition:.2s}
+  .sw i:after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:.2s}
+  .sw input:checked + i{background:var(--accent)}
+  .sw input:checked + i:after{transform:translateX(18px)}
+
+  .group-card{border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:10px;background:#fcfcfb}
+  .group-card .gc-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .group-card .gc-head strong{flex:1 1 auto}
+  .btn{font:inherit;background:var(--accent);color:#fff;border:0;border-radius:6px;padding:8px 14px;cursor:pointer}
+  .btn.ghost{background:none;color:var(--muted);border:1px solid var(--line)}
+  .btn.sm{padding:5px 10px;font-size:12px}
+
+  /* ---- guide ---- */
+  .note{background:var(--warnbg);border:1px solid #f0e0b0;border-radius:var(--r);padding:14px 16px;margin-bottom:16px}
+  .note h4{font-size:13px;margin-bottom:6px;color:var(--warn)}
+  .note p{margin:0 0 8px;font-size:13px}
+  .note p:last-child{margin-bottom:0}
+  .steps{counter-reset:s;list-style:none;padding:0;margin:0}
+  .steps li{counter-increment:s;position:relative;padding:0 0 16px 34px;margin:0}
+  .steps li:before{content:counter(s);position:absolute;left:0;top:0;width:22px;height:22px;border-radius:50%;
+    background:var(--accent);color:#fff;font-size:12px;display:grid;place-items:center;font-weight:600}
+  .steps li:not(:last-child):after{content:"";position:absolute;left:10.5px;top:26px;bottom:4px;width:1px;background:var(--line)}
+  .steps strong{display:block;margin-bottom:3px}
+  .steps p{margin:0;font-size:13px;color:var(--muted)}
+  code,kbd{background:#f0f0ec;border-radius:4px;padding:1px 5px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
+  pre{background:#16161a;color:#e8e8e4;border-radius:var(--r);padding:14px 16px;overflow:auto;font-size:12px;line-height:1.6}
+  pre .c{color:#7f9f7f}
+  table.ex{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+  table.ex td,table.ex th{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+  table.ex th{background:#fafaf8;font-weight:600}
+
+  /* ---- preview ---- */
+  .pv-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .pv-head h3{font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+  .pv-tabs{display:flex;gap:4px}
+  .pv-tabs button{font:inherit;font-size:12px;padding:5px 11px;border:1px solid var(--line);background:#fff;border-radius:999px;cursor:pointer;color:var(--muted)}
+  .pv-tabs button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .pv-stage{border:1px solid var(--line);border-radius:var(--r);padding:20px;background:#fffef5;min-height:420px}
+  .pv-count{font-size:12px;color:var(--muted);margin-top:12px}
+
+  /* preview mirrors the plugin's own class names so what you see is what ships */
+  .sdl-gf-root{margin-bottom:20px;font-size:13px}
+  .sdl-gf-bar{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:10px}
+  .sdl-gf-inline-groups{display:flex;flex-wrap:wrap;align-items:flex-end;gap:20px;flex:1 1 auto}
+  .sdl-gf-group{display:flex;flex-direction:column;gap:6px}
+  .sdl-gf-group-label{font-size:.8em;letter-spacing:.06em;text-transform:uppercase;opacity:.6}
+  .sdl-gf-options{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+  .sdl-gf-opt{display:inline-flex;align-items:center;gap:6px;font:inherit;background:none;border:0;padding:0;cursor:pointer}
+  .sdl-gf-opt-pills{padding:6px 13px;border:1px solid rgba(0,0,0,.3);border-radius:999px}
+  .sdl-gf-opt-chips{padding:6px 12px;border:1px solid rgba(0,0,0,.3);border-radius:6px}
+  .sdl-gf-opt-text{opacity:.65;padding:2px 0}
+  .sdl-gf-opt-on{background:#16161a;border-color:#16161a;color:#fff;opacity:1}
+  .sdl-gf-opt-text.sdl-gf-opt-on{background:none;color:#16161a;text-decoration:underline;text-underline-offset:4px}
+  .sdl-gf-opt-disabled{opacity:.32;pointer-events:none}
+  .sdl-gf-opt-count{font-size:.82em;opacity:.65}
+  .sdl-gf-delim{opacity:.4;padding:0 .45em}
+  .pv-grid{display:grid;gap:10px}
+  .pv-tile{border-radius:3px;background:#dcdad0;position:relative;overflow:hidden;transition:opacity .25s}
+  .pv-tile span{position:absolute;left:7px;bottom:6px;font-size:10px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+
+  .copy-wrap{position:relative}
+  .copy-wrap .btn{position:absolute;top:10px;right:10px}
+  @media (max-width:1100px){.app{grid-template-columns:1fr}.nav{position:static;height:auto}.main{grid-template-columns:1fr}.preview-pane{position:static;max-height:none}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <nav class="nav">
+    <div class="brand">
+      <h1>Gallery Filter</h1>
+      <p>Square Design Lab · v1.0</p>
+    </div>
+    <button data-tab="setup" class="on">Setup guide</button>
+    <button data-tab="sections">Sections &amp; captions</button>
+    <button data-tab="groups">Filter groups</button>
+    <button data-tab="layout">Layout &amp; behaviour</button>
+    <button data-tab="searchsort">Search &amp; sort</button>
+    <button data-tab="styles">Styling</button>
+    <button data-tab="text">Labels &amp; text</button>
+    <button data-tab="install">Install code</button>
+  </nav>
+
+  <div class="main">
+    <div class="pane" id="panes"></div>
+
+    <div class="pane preview-pane">
+      <div class="pv-head">
+        <h3>Live preview</h3>
+        <div class="pv-tabs">
+          <button data-pv="grid" class="on">Grid</button>
+          <button data-pv="masonry">Masonry</button>
+          <button data-pv="strips">Strips</button>
+        </div>
+      </div>
+      <div class="pv-stage">
+        <div id="pvBar"></div>
+        <div class="pv-grid" id="pvGrid"></div>
+      </div>
+      <div class="pv-count" id="pvCount"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ------------------------------------------------------------------ */
+/*  Sample data — the real captions from the SDL test gallery, so the   */
+/*  preview exercises the same edge cases the plugin ships against:     */
+/*  a nested tag, a missing Year, a missing trailing period, and a      */
+/*  Location containing a comma.                                        */
+/* ------------------------------------------------------------------ */
+var SAMPLE = [
+  { cap:'Tags: Branding, Design. Year: 2024. Location: London, UK. Author: Sam.', ratio:1.43 },
+  { cap:'Tags: Design, Development. Year: 2025. Location: Chicago. Author: Emily.', ratio:0.78 },
+  { cap:'Tags: Development. Year: 2024. Location: California. Author: Sam', ratio:1.43 },
+  { cap:'Tags: Branding. Year: 2024. Location: Paris. Author: Emily.', ratio:1.0 },
+  { cap:'Tags: Interiors > Residential, Interiors > Hospitality, Branding. Location: Madrid.', ratio:1.43 },
+  { cap:'Tags: Interiors > Residential, Interiors > Hotel, SEO. Location: Madrid. Year: 2025', ratio:0.78 }
+];
+
+/* Parser kept byte-compatible with galleryFilter.js */
+var META_RE = /([A-Za-z0-9 _-]+):\s*([^|;.\n]+)(?=[|;.\n]|$)/g;
+function normalizeKey(k){
+  var l=String(k).toLowerCase().trim();
+  if(l==='tag'||l==='tags'||l==='filter'||l==='filters')return 'Tags';
+  if(l==='category'||l==='categories')return 'Categories';
+  if(l==='loc'||l==='location'||l==='locations')return 'Location';
+  if(l==='year'||l==='years'||l==='date')return 'Year';
+  return l.replace(/\b\w/g,function(c){return c.toUpperCase();});
+}
+function parseCaption(raw){
+  raw=String(raw||'').trim(); var fields={}, order=[]; META_RE.lastIndex=0; var m, ms=[];
+  while((m=META_RE.exec(raw))!==null) ms.push(m);
+  ms.forEach(function(mm){
+    var key=normalizeKey(mm[1]), vs=String(mm[2]).trim(); if(!vs)return;
+    var values = key==='Location' ? [vs] : vs.split(CFG.tagDelimiter==='pipe'?/\|/:CFG.tagDelimiter==='slash'?/\//:CFG.tagDelimiter==='semicolon'?/;/:/,/);
+    if(!fields[key]){fields[key]=[];order.push(key);}
+    values.map(function(v){return v.trim();}).filter(Boolean).forEach(function(val){
+      var p=val.split('>').map(function(x){return x.trim();}).filter(Boolean);
+      if(p.length>1){
+        var parent=p[0], child=p.slice(0,2).join(' > ');
+        if(fields[key].indexOf(parent)===-1)fields[key].push(parent);
+        if(fields[key].indexOf(child)===-1)fields[key].push(child);
+      } else if(fields[key].indexOf(val)===-1) fields[key].push(val);
+    });
+  });
+  var excerpt=raw.replace(META_RE,'').replace(/[.\n]+/g,'. ').replace(/\s+\./g,'.').replace(/^[.\s]+/,'').replace(/\s{2,}/g,' ').trim();
+  return {fields:fields, order:order, excerpt:excerpt};
+}
+
+/* ------------------------------------------------------------------ */
+/*  Config state                                                       */
+/* ------------------------------------------------------------------ */
+var CFG = {
+  sections:'all',
+  captionMode:'clean', captionFields:[], captionDelimiter:' / ', captionShowKeys:false,
+  tagDelimiter:'comma',
+  groupSettings:{},           // field -> {enabled,label,ui,multiSelect,showCounts,allText}
+  groupOrder:[],
+  layout:'top', align:'left',
+  sidebarWidth:25, sidebarWidthUnit:'%', stickySidebar:false, stickyToolbar:false, stickyTopOffset:20,
+  mobileBreakpoint:1024,
+  fbDesktop:false, fbMobile:true, fbSide:'left',
+  showAllOption:true, showCounts:false, disableZeroOptions:true, showResultCount:false, showClearAll:true,
+  searchEnabled:false, searchPlaceholder:'Search',
+  sortEnabled:false, sortOptions:['gallery','az','za'], sortDefault:'gallery',
+  animType:'fade', animSpeed:'normal', animStagger:40, layoutTransition:true,
+  urlSync:true, urlParamPrefix:'f_', scrollOnChange:false,
+  inheritStyles:true,
+  textColor:'', accent:'', borderColor:'', mutedColor:'', panelBg:'', sidebarBg:'',
+  borderOpacity:0.35, radius:6, pillRadius:999, fontSize:14, gap:10, marginBottom:32,
+  txtAll:'All', txtFilter:'Filters', txtDrawer:'Filters', txtApply:'Show results',
+  txtClear:'Clear all', txtCount:'{n} of {total}', txtNo:'No images match these filters.', txtSort:'Sort'
+};
+
+var STATE = { tab:'setup', pv:'grid', active:{}, pvOrder:null };
+
+/* discovered fields from the sample */
+function discover(){
+  var order=[], by={};
+  SAMPLE.forEach(function(s){
+    var p=parseCaption(s.cap); s._p=p;
+    Object.keys(p.fields).forEach(function(k){
+      if(!by[k]){by[k]=[];order.push(k);}
+      p.fields[k].forEach(function(v){ if(by[k].indexOf(v)===-1) by[k].push(v); });
+    });
+  });
+  Object.keys(by).forEach(function(k){
+    var vals=by[k];
+    if(k==='Year'||vals.every(function(v){return /^\d{3,4}$/.test(v);}))
+      vals.sort(function(a,b){return parseFloat(b)-parseFloat(a);});
+    else vals.sort(function(a,b){
+      var ap=a.split(' > '),bp=b.split(' > ');
+      var c=ap[0].localeCompare(bp[0]); return c!==0?c:(ap[1]||'').localeCompare(bp[1]||'');
+    });
+  });
+  return {order:order, by:by};
+}
+
+function gset(field){
+  if(!CFG.groupSettings[field]) CFG.groupSettings[field]={};
+  var g=CFG.groupSettings[field];
+  if(g.enabled===undefined)g.enabled=true;
+  if(g.label===undefined)g.label='';
+  if(g.ui===undefined)g.ui='pills';
+  if(g.multiSelect===undefined)g.multiSelect=true;
+  if(g.showCounts===undefined)g.showCounts=false;
+  if(g.allText===undefined)g.allText='';
+  return g;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Small builders                                                     */
+/* ------------------------------------------------------------------ */
+function h(tag,attrs,kids){
+  var n=document.createElement(tag);
+  if(attrs) Object.keys(attrs).forEach(function(k){
+    if(k==='class')n.className=attrs[k];
+    else if(k==='html')n.innerHTML=attrs[k];
+    else if(k==='text')n.textContent=attrs[k];
+    else if(k.indexOf('on')===0)n.addEventListener(k.slice(2),attrs[k]);
+    else n.setAttribute(k,attrs[k]);
+  });
+  (kids||[]).forEach(function(c){ if(c) n.appendChild(c); });
+  return n;
+}
+function card(title,rows){ return h('div',{class:'card'},[h('h3',{text:title})].concat(rows)); }
+function row(labelText,control,hint){
+  var l=h('label',{},[document.createTextNode(labelText)]);
+  if(hint) l.appendChild(h('span',{class:'hint',text:hint}));
+  return h('div',{class:'row'},[l,control]);
+}
+function toggle(get,set){
+  var i=h('input',{type:'checkbox'});
+  i.checked=!!get();
+  i.addEventListener('change',function(){set(i.checked);render();});
+  return h('span',{class:'sw'},[i,h('i')]);
+}
+function select(opts,get,set){
+  var s=h('select');
+  opts.forEach(function(o){
+    var v=Array.isArray(o)?o[0]:o, t=Array.isArray(o)?o[1]:o;
+    var op=h('option',{value:v,text:t});
+    if(String(get())===String(v))op.selected=true;
+    s.appendChild(op);
+  });
+  s.addEventListener('change',function(){set(s.value);render();});
+  return s;
+}
+function textIn(get,set,ph,wide){
+  var i=h('input',{type:'text',value:get()||'',placeholder:ph||''});
+  if(wide)i.style.width='260px';
+  i.addEventListener('input',function(){set(i.value);renderPreview();renderCode();});
+  return i;
+}
+function numIn(get,set,min,max){
+  var i=h('input',{type:'number',value:get()});
+  if(min!=null)i.min=min; if(max!=null)i.max=max;
+  i.addEventListener('input',function(){set(parseFloat(i.value));render();});
+  return i;
+}
+function colorIn(get,set){
+  var wrap=h('span',{},[]);
+  var c=h('input',{type:'color',value:get()||'#000000'});
+  var t=h('input',{type:'text',value:get()||'',placeholder:'inherit'});
+  t.style.width='110px'; t.style.marginLeft='8px';
+  c.addEventListener('input',function(){set(c.value);t.value=c.value;renderPreview();renderCode();});
+  t.addEventListener('input',function(){set(t.value);renderPreview();renderCode();});
+  wrap.appendChild(c); wrap.appendChild(t);
+  return wrap;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Panes                                                              */
+/* ------------------------------------------------------------------ */
+var PANES = {};
+
+PANES.setup = function(){
+  var f=discover();
+  return [
+    h('div',{class:'note'},[
+      h('h4',{text:'Captions must be turned ON in Squarespace'}),
+      h('p',{html:'A gallery section is not a collection — Squarespace publishes <strong>no JSON</strong> for it, so the image caption in the page is the only place this plugin can read from. When captions are switched off, Squarespace leaves them out of the page entirely and there is nothing to filter on.'}),
+      h('p',{html:'Turn captions <strong>on</strong> for the section, then let the plugin hide them again. With the default <code>captionMode: \'clean\'</code> your visitors never see the raw <code>Tags: …</code> text — it is removed before the page paints.'})
+    ]),
+    card('Step by step', [h('ol',{class:'steps'},[
+      h('li',{},[h('strong',{text:'Turn captions on'}),
+        h('p',{html:'Edit the page → click the gallery section → <strong>Edit Section</strong> → <strong>Design</strong> → set <strong>Captions</strong> to show (any style — "Below image" is fine). Do this for every gallery you want to filter.'})]),
+      h('li',{},[h('strong',{text:'Write the metadata into each image caption'}),
+        h('p',{html:'Click an image → <strong>Edit</strong> → put your filter data in the <strong>caption</strong> field, as <code>Key: value.</code> pairs separated by full stops.'})]),
+      h('li',{},[h('strong',{text:'Build your config below'}),
+        h('p',{text:'The filter groups are discovered from whatever keys you used — you do not have to declare them.'})]),
+      h('li',{},[h('strong',{text:'Paste the install code'}),
+        h('p',{html:'Squarespace → <strong>Settings → Advanced → Code Injection → Footer</strong>, or the page\'s own Page Header injection if you only want it on one page.'})])
+    ])]),
+    card('Caption format', [
+      h('pre',{html:'<span class="c">// one image\'s caption</span>\nTags: Interiors &gt; Residential, Branding. Year: 2025. Location: Madrid. Author: Sam.'}),
+      h('table',{class:'ex'},[
+        h('tr',{},[h('th',{text:'Rule'}),h('th',{text:'Detail'})]),
+        h('tr',{},[h('td',{html:'<code>Key: value.</code>'}),h('td',{html:'Each pair ends with a full stop, semicolon, pipe or a new line. The last pair may end with nothing at all.'})]),
+        h('tr',{},[h('td',{html:'Multiple values'}),h('td',{html:'Separate with commas — <code>Tags: Branding, Design.</code>'})]),
+        h('tr',{},[h('td',{html:'Sub-categories'}),h('td',{html:'<code>Parent &gt; Child</code>. Selecting <em>Interiors</em> matches every image under it; <em>Residential</em> narrows to that child.'})]),
+        h('tr',{},[h('td',{html:'<code>Location</code>'}),h('td',{html:'Never split on commas, so <code>Location: London, UK</code> stays one place.'})]),
+        h('tr',{},[h('td',{html:'Your own keys'}),h('td',{html:'Any key works. <code>Author: Sam.</code> becomes an Author filter with no configuration.'})]),
+        h('tr',{},[h('td',{html:'Plain text'}),h('td',{html:'Anything that is not a <code>Key: value</code> pair is kept as the visible caption in <em>Clean</em> mode.'})])
+      ])
+    ]),
+    card('Detected from the sample captions', [
+      h('div',{},f.order.map(function(k){
+        return h('div',{class:'row'},[
+          h('label',{},[document.createTextNode(k),h('span',{class:'hint',text:f.by[k].join(' · ')})]),
+          h('span',{style:'color:var(--ok);font-size:12px',text:f.by[k].length+' values'})
+        ]);
+      }))
+    ]),
+    card('Supported gallery types',[
+      h('table',{class:'ex'},[
+        h('tr',{},[h('th',{text:'Type'}),h('th',{text:'Supported'}),h('th',{text:'Notes'})]),
+        h('tr',{},[h('td',{text:'Grid'}),h('td',{text:'Yes'}),h('td',{text:'Native CSS grid — reflows on its own.'})]),
+        h('tr',{},[h('td',{text:'Masonry'}),h('td',{text:'Yes'}),h('td',{text:'The plugin re-packs the columns; Squarespace never does.'})]),
+        h('tr',{},[h('td',{text:'Strips'}),h('td',{text:'Yes'}),h('td',{text:'The plugin re-justifies the rows.'})]),
+        h('tr',{},[h('td',{text:'Slideshow / Reel / Stacked'}),h('td',{text:'No'}),h('td',{text:'Carousels — skipped with a console notice.'})])
+      ])
+    ])
+  ];
+};
+
+PANES.sections = function(){
+  return [
+    card('Which galleries',[
+      row('Sections', textIn(function(){return CFG.sections==='all'?'':(Array.isArray(CFG.sections)?CFG.sections.join(', '):CFG.sections);},
+        function(v){ v=v.trim(); CFG.sections = v? v.split(',').map(function(s){return s.trim();}).filter(Boolean) : 'all'; },
+        'all gallery sections', true),
+        'Leave blank for every gallery section on the page. Otherwise paste Section IDs, comma separated.')
+    ]),
+    card('Caption handling',[
+      row('Caption mode', select([['clean','Clean — strip the metadata, keep any prose'],['meta','Meta — rebuild from chosen fields'],['raw','Raw — leave Squarespace\'s caption alone'],['hide','Hide — no caption at all']],
+        function(){return CFG.captionMode;}, function(v){CFG.captionMode=v;}),
+        'Clean is the default: visitors never see the "Tags: …" text.'),
+      CFG.captionMode==='meta' ? row('Fields to show', textIn(function(){return CFG.captionFields.join(', ');},
+        function(v){CFG.captionFields=v.split(',').map(function(s){return s.trim();}).filter(Boolean);}, 'all fields', true),
+        'Comma separated, e.g. Tags, Year. Blank shows every field.') : null,
+      CFG.captionMode==='meta' ? row('Separator', textIn(function(){return CFG.captionDelimiter;},function(v){CFG.captionDelimiter=v;},' / ')) : null,
+      CFG.captionMode==='meta' ? row('Show the key names', toggle(function(){return CFG.captionShowKeys;},function(v){CFG.captionShowKeys=v;}),
+        'On: "Tags: Branding, Design". Off: "Branding, Design".') : null,
+      row('Value separator in captions', select([['comma','Comma  ,'],['pipe','Pipe  |'],['slash','Slash  /'],['semicolon','Semicolon  ;']],
+        function(){return CFG.tagDelimiter;},function(v){CFG.tagDelimiter=v;}),
+        'How several values are separated inside one key. Location is never split.')
+    ])
+  ];
+};
+
+PANES.groups = function(){
+  var f=discover();
+  var cards = f.order.map(function(field){
+    var g=gset(field);
+    var head=h('div',{class:'gc-head'},[
+      h('strong',{text:field}),
+      h('span',{style:'font-size:12px;color:var(--muted)',text:f.by[field].length+' values'}),
+      toggle(function(){return g.enabled;},function(v){g.enabled=v;})
+    ]);
+    var body = g.enabled ? h('div',{},[
+      row('Label shown to visitors', textIn(function(){return g.label;},function(v){g.label=v;},field)),
+      row('Style', select([['pills','Pills'],['chips','Chips'],['text','Text with separator'],['checkbox','Checkboxes']],
+        function(){return g.ui;},function(v){g.ui=v;})),
+      row('Allow several at once', toggle(function(){return g.multiSelect;},function(v){g.multiSelect=v;})),
+      row('Show counts', toggle(function(){return g.showCounts;},function(v){g.showCounts=v;})),
+      CFG.showAllOption ? row('"All" wording', textIn(function(){return g.allText;},function(v){g.allText=v;},CFG.txtAll)) : null
+    ]) : null;
+    return h('div',{class:'group-card'},[head,body]);
+  });
+
+  return [
+    card('Global',[
+      row('Show an "All" option', toggle(function(){return CFG.showAllOption;},function(v){CFG.showAllOption=v;}),
+        'A leading entry that clears its own group.'),
+      row('Dim options with no results', toggle(function(){return CFG.disableZeroOptions;},function(v){CFG.disableZeroOptions=v;})),
+      row('Show a result count', toggle(function(){return CFG.showResultCount;},function(v){CFG.showResultCount=v;})),
+      row('Show "Clear all"', toggle(function(){return CFG.showClearAll;},function(v){CFG.showClearAll=v;}))
+    ]),
+    card('Filter groups', cards.concat([
+      h('p',{style:'font-size:12px;color:var(--muted);margin:8px 0 0',
+        text:'Groups are discovered from your captions. Add a new key to a caption and it appears here — no config change needed.'})
+    ]))
+  ];
+};
+
+PANES.layout = function(){
+  return [
+    card('Layout',[
+      row('Placement', select([['top','Top bar'],['sidebar','Left sidebar']],function(){return CFG.layout;},function(v){CFG.layout=v;})),
+      CFG.layout==='top'? row('Alignment', select([['left','Left'],['center','Centre'],['right','Right']],function(){return CFG.align;},function(v){CFG.align=v;})):null,
+      CFG.layout==='top'? row('Stick to the top on scroll', toggle(function(){return CFG.stickyToolbar;},function(v){CFG.stickyToolbar=v;})):null,
+      CFG.layout==='sidebar'? row('Sidebar width', h('span',{},[numIn(function(){return CFG.sidebarWidth;},function(v){CFG.sidebarWidth=v;},5,60),
+        select([['%','%'],['px','px']],function(){return CFG.sidebarWidthUnit;},function(v){CFG.sidebarWidthUnit=v;})])):null,
+      CFG.layout==='sidebar'? row('Sticky sidebar', toggle(function(){return CFG.stickySidebar;},function(v){CFG.stickySidebar=v;})):null,
+      (CFG.stickyToolbar||CFG.stickySidebar)? row('Sticky offset (px)', numIn(function(){return CFG.stickyTopOffset;},function(v){CFG.stickyTopOffset=v;},0,300)):null
+    ]),
+    card('Mobile',[
+      row('Mobile breakpoint (px)', numIn(function(){return CFG.mobileBreakpoint;},function(v){CFG.mobileBreakpoint=v;},320,1600)),
+      row('Filter button on desktop', toggle(function(){return CFG.fbDesktop;},function(v){CFG.fbDesktop=v;}),'Opens a drawer instead of showing the filters inline.'),
+      row('Filter button on mobile', toggle(function(){return CFG.fbMobile;},function(v){CFG.fbMobile=v;}),'Off means the filters render inline on mobile too — they can never become unreachable.'),
+      (CFG.fbDesktop||CFG.fbMobile)? row('Drawer slides from', select([['left','Left'],['right','Right']],function(){return CFG.fbSide;},function(v){CFG.fbSide=v;})):null
+    ]),
+    card('Motion',[
+      row('Entry animation', select([['none','None'],['fade','Fade']],function(){return CFG.animType;},function(v){CFG.animType=v;})),
+      CFG.animType!=='none'? row('Speed', select([['fast','Fast'],['normal','Normal'],['slow','Slow']],function(){return CFG.animSpeed;},function(v){CFG.animSpeed=v;})):null,
+      CFG.animType!=='none'? row('Stagger (ms)', numIn(function(){return CFG.animStagger;},function(v){CFG.animStagger=v;},0,300)):null,
+      row('Animate images into position', toggle(function(){return CFG.layoutTransition;},function(v){CFG.layoutTransition=v;}),
+        'Masonry and strips slide to their new spot instead of jumping.')
+    ]),
+    card('URL',[
+      row('Put filters in the URL', toggle(function(){return CFG.urlSync;},function(v){CFG.urlSync=v;}),'Makes a filtered view shareable.'),
+      CFG.urlSync? row('Parameter prefix', textIn(function(){return CFG.urlParamPrefix;},function(v){CFG.urlParamPrefix=v;},'f_'),
+        'Do not remove this. Squarespace consumes bare "category" and "tag" parameters server-side and would render an empty gallery.'):null,
+      row('Scroll to the gallery on change', toggle(function(){return CFG.scrollOnChange;},function(v){CFG.scrollOnChange=v;}))
+    ])
+  ];
+};
+
+PANES.searchsort = function(){
+  var ALL=[['gallery','Gallery order'],['az','A–Z'],['za','Z–A'],['newest','Newest first'],['oldest','Oldest first'],['random','Random']];
+  return [
+    card('Search',[
+      row('Enable search', toggle(function(){return CFG.searchEnabled;},function(v){CFG.searchEnabled=v;})),
+      CFG.searchEnabled? row('Placeholder', textIn(function(){return CFG.searchPlaceholder;},function(v){CFG.searchPlaceholder=v;},'Search')):null
+    ]),
+    card('Sort',[
+      row('Enable sort', toggle(function(){return CFG.sortEnabled;},function(v){CFG.sortEnabled=v;})),
+      CFG.sortEnabled? h('div',{},ALL.map(function(o){
+        var on=CFG.sortOptions.indexOf(o[0])!==-1;
+        return row(o[1], toggle(function(){return on;},function(v){
+          if(v){ if(CFG.sortOptions.indexOf(o[0])===-1)CFG.sortOptions.push(o[0]); }
+          else if(CFG.sortOptions.length>1){ CFG.sortOptions=CFG.sortOptions.filter(function(x){return x!==o[0];}); }
+          if(CFG.sortOptions.indexOf(CFG.sortDefault)===-1) CFG.sortDefault=CFG.sortOptions[0];
+        }));
+      })):null,
+      CFG.sortEnabled? row('Default order', select(ALL.filter(function(o){return CFG.sortOptions.indexOf(o[0])!==-1;}),
+        function(){return CFG.sortDefault;},function(v){CFG.sortDefault=v;})):null,
+      CFG.sortEnabled? h('p',{style:'font-size:12px;color:var(--muted);margin:8px 0 0',
+        text:'Newest / Oldest sort on the Year field from your captions.'}):null
+    ])
+  ];
+};
+
+PANES.styles = function(){
+  return [
+    h('div',{class:'note'},[
+      h('h4',{text:'Follows your site automatically'}),
+      h('p',{html:'The filter takes your site\'s <strong>font</strong> from the section it sits in, and derives every colour from that section\'s own text colour — borders, muted text and chip fills are tints of it, and filled buttons pick black or white text by contrast. Dropdown and drawer backgrounds are read from the nearest ancestor that actually paints one. Leave this on and the filter looks native on any template.'})
+    ]),
+    card('Colours',[
+      row('Follow site styles', toggle(function(){return CFG.inheritStyles;},function(v){CFG.inheritStyles=v;})),
+      !CFG.inheritStyles? row('Text', colorIn(function(){return CFG.textColor;},function(v){CFG.textColor=v;})):null,
+      !CFG.inheritStyles? row('Accent (selected state)', colorIn(function(){return CFG.accent;},function(v){CFG.accent=v;})):null,
+      !CFG.inheritStyles? row('Borders', colorIn(function(){return CFG.borderColor;},function(v){CFG.borderColor=v;})):null,
+      !CFG.inheritStyles? row('Muted text / counts', colorIn(function(){return CFG.mutedColor;},function(v){CFG.mutedColor=v;})):null,
+      !CFG.inheritStyles? row('Drawer background', colorIn(function(){return CFG.panelBg;},function(v){CFG.panelBg=v;})):null,
+      CFG.inheritStyles? row('Border opacity', numIn(function(){return CFG.borderOpacity;},function(v){CFG.borderOpacity=v;},0,1)):null
+    ]),
+    card('Shape & spacing',[
+      row('Corner radius (px)', numIn(function(){return CFG.radius;},function(v){CFG.radius=v;},0,40)),
+      row('Pill radius (px)', numIn(function(){return CFG.pillRadius;},function(v){CFG.pillRadius=v;},0,999),'999 = fully round, 0 = square.'),
+      row('Font size (px)', numIn(function(){return CFG.fontSize;},function(v){CFG.fontSize=v;},10,24)),
+      row('Gap between controls (px)', numIn(function(){return CFG.gap;},function(v){CFG.gap=v;},0,60)),
+      row('Space below the filter (px)', numIn(function(){return CFG.marginBottom;},function(v){CFG.marginBottom=v;},0,120))
+    ])
+  ];
+};
+
+PANES.text = function(){
+  return [card('Wording',[
+    row('"All"', textIn(function(){return CFG.txtAll;},function(v){CFG.txtAll=v;})),
+    row('Filter button', textIn(function(){return CFG.txtFilter;},function(v){CFG.txtFilter=v;})),
+    row('Drawer title', textIn(function(){return CFG.txtDrawer;},function(v){CFG.txtDrawer=v;})),
+    row('Drawer apply button', textIn(function(){return CFG.txtApply;},function(v){CFG.txtApply=v;})),
+    row('Clear all', textIn(function(){return CFG.txtClear;},function(v){CFG.txtClear=v;})),
+    row('Result count', textIn(function(){return CFG.txtCount;},function(v){CFG.txtCount=v;}),'{n} and {total} are replaced.'),
+    row('No results', textIn(function(){return CFG.txtNo;},function(v){CFG.txtNo=v;},'',true)),
+    row('Sort placeholder', textIn(function(){return CFG.txtSort;},function(v){CFG.txtSort=v;}))
+  ])];
+};
+
+PANES.install = function(){
+  var pre=h('pre',{id:'codeOut'});
+  var btn=h('button',{class:'btn sm',text:'Copy',onclick:function(){
+    navigator.clipboard.writeText(document.getElementById('codeOut').textContent);
+    btn.textContent='Copied'; setTimeout(function(){btn.textContent='Copy';},1400);
+  }});
+  return [
+    h('div',{class:'note'},[
+      h('h4',{text:'Before you paste'}),
+      h('p',{html:'Make sure <strong>captions are switched on</strong> for every gallery section you want to filter — see the Setup guide. Without them there is nothing in the page to read.'})
+    ]),
+    card('Where this goes',[
+      h('p',{style:'margin:0;font-size:13px;color:var(--muted)',
+        html:'Squarespace → <strong>Settings → Advanced → Code Injection → Footer</strong> for the whole site, or <strong>Page Settings → Advanced → Page Header Code Injection</strong> for one page only.'})
+    ]),
+    card('Install code',[h('div',{class:'copy-wrap'},[btn,pre])])
+  ];
+};
+
+/* ------------------------------------------------------------------ */
+/*  Config object + code output                                        */
+/* ------------------------------------------------------------------ */
+function buildConfig(){
+  var f=discover();
+  var o={};
+  if(CFG.sections!=='all') o.sections=CFG.sections;
+  if(CFG.captionMode!=='clean') o.captionMode=CFG.captionMode;
+  if(CFG.captionMode==='meta'){
+    if(CFG.captionFields.length)o.captionFields=CFG.captionFields;
+    if(CFG.captionDelimiter!==' / ')o.captionDelimiter=CFG.captionDelimiter;
+    if(CFG.captionShowKeys)o.captionShowKeys=true;
+  }
+  if(CFG.tagDelimiter!=='comma')o.tagDelimiter=CFG.tagDelimiter;
+
+  var settings={};
+  f.order.forEach(function(field){
+    var g=gset(field), s={};
+    if(!g.enabled){ settings[field]={enabled:false}; return; }
+    if(g.label)s.label=g.label;
+    if(g.ui!=='pills')s.ui=g.ui;
+    if(!g.multiSelect)s.multiSelect=false;
+    if(g.showCounts)s.showCounts=true;
+    if(g.allText)s.allText=g.allText;
+    if(Object.keys(s).length)settings[field]=s;
+  });
+  if(Object.keys(settings).length) o.autoGroups={settings:settings};
+
+  if(CFG.layout!=='top')o.layout=CFG.layout;
+  if(CFG.align!=='left')o.align=CFG.align;
+  if(CFG.layout==='sidebar'){
+    o.sidebarWidth=CFG.sidebarWidth;
+    if(CFG.sidebarWidthUnit!=='%')o.sidebarWidthUnit=CFG.sidebarWidthUnit;
+    if(CFG.stickySidebar)o.stickySidebar=true;
+  }
+  if(CFG.stickyToolbar)o.stickyToolbar=true;
+  if((CFG.stickyToolbar||CFG.stickySidebar)&&CFG.stickyTopOffset!==20)o.stickyTopOffset=CFG.stickyTopOffset;
+  if(CFG.mobileBreakpoint!==1024)o.mobileBreakpoint=CFG.mobileBreakpoint;
+
+  var fb={};
+  if(CFG.fbDesktop)fb.showOnDesktop=true;
+  if(!CFG.fbMobile)fb.showOnMobile=false;
+  if(CFG.fbSide!=='left')fb.side=CFG.fbSide;
+  if(Object.keys(fb).length)o.filterButton=fb;
+
+  if(!CFG.showAllOption)o.showAllOption=false;
+  if(!CFG.disableZeroOptions)o.disableZeroOptions=false;
+  if(CFG.showResultCount)o.showResultCount=true;
+  if(!CFG.showClearAll)o.showClearAll=false;
+
+  if(CFG.searchEnabled)o.search={enabled:true,placeholder:CFG.searchPlaceholder};
+  if(CFG.sortEnabled)o.sort={enabled:true,options:CFG.sortOptions,defaultOrder:CFG.sortDefault};
+
+  if(CFG.animType!=='fade'||CFG.animSpeed!=='normal'||CFG.animStagger!==40)
+    o.animation={type:CFG.animType,speed:CFG.animSpeed,stagger:CFG.animStagger};
+  if(!CFG.layoutTransition)o.layoutTransition=false;
+
+  if(!CFG.urlSync)o.urlSync=false;
+  if(CFG.urlParamPrefix!=='f_')o.urlParamPrefix=CFG.urlParamPrefix;
+  if(CFG.scrollOnChange)o.scrollOnChange=true;
+
+  var st={};
+  if(!CFG.inheritStyles){
+    st.inherit=false;
+    ['textColor','accent','borderColor','mutedColor','panelBg','sidebarBg'].forEach(function(k){ if(CFG[k])st[k]=CFG[k]; });
+  } else if(CFG.borderOpacity!==0.35) st.borderOpacity=CFG.borderOpacity;
+  [['radius',6],['pillRadius',999],['fontSize',14],['gap',10],['marginBottom',32]].forEach(function(p){
+    if(CFG[p[0]]!==p[1])st[p[0]]=CFG[p[0]];
+  });
+  if(Object.keys(st).length)o.styles=st;
+
+  var t={};
+  [['txtAll','allText','All'],['txtFilter','filterButton','Filters'],['txtDrawer','drawerTitle','Filters'],
+   ['txtApply','apply','Show results'],['txtClear','clearAll','Clear all'],['txtCount','resultCount','{n} of {total}'],
+   ['txtNo','noResults','No images match these filters.'],['txtSort','sortPlaceholder','Sort']].forEach(function(p){
+    if(CFG[p[0]]!==p[2])t[p[1]]=CFG[p[0]];
+  });
+  if(Object.keys(t).length)o.text=t;
+
+  return o;
+}
+
+function stringify(o,ind){
+  ind=ind||'    ';
+  var s=JSON.stringify(o,null,2);
+  return s.replace(/"([A-Za-z_$][A-Za-z0-9_$]*)":/g,'$1:')
+          .replace(/"/g,"'")
+          .split('\n').map(function(l,i){return i?ind+l:l;}).join('\n');
+}
+
+function renderCode(){
+  var pre=document.getElementById('codeOut');
+  if(!pre)return;
+  var cfg=buildConfig();
+  var body = Object.keys(cfg).length ? stringify(cfg) : '{}';
+  pre.textContent =
+'<link rel="stylesheet" href="https://gallery-section-filter.pages.dev/galleryFilter.css">\n'+
+'<script>\n'+
+'  window.SDL_GALLERY_FILTER_CONFIG = '+body+';\n'+
+'<\/script>\n'+
+'<script src="https://gallery-section-filter.pages.dev/galleryFilter.js"><\/script>';
+}
+
+/* ------------------------------------------------------------------ */
+/*  Preview — runs the real matching rules against the sample captions */
+/* ------------------------------------------------------------------ */
+function itemHas(p,field,value){
+  var v=p.fields[field]; if(!v)return false;
+  if(v.indexOf(value)!==-1)return true;
+  return v.some(function(x){return x.indexOf(value+' > ')===0;});
+}
+function pvMatches(p,skip){
+  var f=discover();
+  for(var i=0;i<f.order.length;i++){
+    var field=f.order[i];
+    if(!gset(field).enabled)continue;
+    if(field===skip)continue;
+    var a=STATE.active[field]||[];
+    if(!a.length)continue;
+    var ok=a.some(function(v){return itemHas(p,field,v);});
+    if(!ok)return false;
+  }
+  return true;
+}
+
+function renderPreview(){
+  var f=discover();
+  var bar=document.getElementById('pvBar'), grid=document.getElementById('pvGrid');
+  if(!bar)return;
+  bar.innerHTML=''; grid.innerHTML='';
+
+  var root=h('div',{class:'sdl-gf-root'});
+  var wrap=h('div',{class:'sdl-gf-bar'});
+  var groups=h('div',{class:'sdl-gf-inline-groups'});
+  if(CFG.align!=='left')groups.style.justifyContent=CFG.align==='center'?'center':'flex-end';
+
+  f.order.forEach(function(field){
+    var g=gset(field); if(!g.enabled)return;
+    var box=h('div',{class:'sdl-gf-group'});
+    box.appendChild(h('div',{class:'sdl-gf-group-label',text:(g.label||field)}));
+    var list=h('div',{class:'sdl-gf-options'});
+    var act=STATE.active[field]||[];
+
+    function opt(value,isAll){
+      var on = isAll ? !act.length : act.indexOf(value)!==-1;
+      var cnt = isAll
+        ? SAMPLE.filter(function(s){return pvMatches(s._p,field);}).length
+        : SAMPLE.filter(function(s){return itemHas(s._p,field,value)&&pvMatches(s._p,field);}).length;
+      var b=h('button',{class:'sdl-gf-opt sdl-gf-opt-'+g.ui+(on?' sdl-gf-opt-on':'')+((!isAll&&CFG.disableZeroOptions&&cnt===0&&!on)?' sdl-gf-opt-disabled':'')});
+      if(g.ui==='pills')b.style.borderRadius=CFG.pillRadius+'px';
+      if(g.ui==='chips')b.style.borderRadius=CFG.radius+'px';
+      b.appendChild(h('span',{text:isAll?(g.allText||CFG.txtAll):value.split(' > ').pop()}));
+      if(g.showCounts)b.appendChild(h('span',{class:'sdl-gf-opt-count',text:String(cnt)}));
+      b.addEventListener('click',function(){
+        if(isAll)STATE.active[field]=[];
+        else if(g.multiSelect){
+          var a=STATE.active[field]||(STATE.active[field]=[]);
+          var i=a.indexOf(value); if(i===-1)a.push(value); else a.splice(i,1);
+        } else STATE.active[field]=(act[0]===value)?[]:[value];
+        renderPreview();
+      });
+      return b;
+    }
+
+    if(CFG.showAllOption&&g.ui!=='checkbox') list.appendChild(opt('__all__',true));
+    f.by[field].forEach(function(v,i){
+      if(g.ui==='text'&&list.children.length) list.appendChild(h('span',{class:'sdl-gf-delim',text:'/'}));
+      list.appendChild(opt(v,false));
+    });
+    box.appendChild(list);
+    groups.appendChild(box);
+  });
+
+  wrap.appendChild(groups);
+
+  var right=h('div',{style:'display:flex;align-items:center;gap:10px'});
+  if(CFG.searchEnabled) right.appendChild(h('input',{type:'text',placeholder:CFG.searchPlaceholder,
+    style:'border:1px solid rgba(0,0,0,.25);border-radius:'+CFG.radius+'px;padding:6px 10px;font:inherit;width:130px'}));
+  if(CFG.sortEnabled) right.appendChild(h('select',{style:'border:1px solid rgba(0,0,0,.25);border-radius:'+CFG.radius+'px;padding:6px 10px;font:inherit'},
+    [h('option',{text:CFG.txtSort})]));
+  var vis=SAMPLE.filter(function(s){return pvMatches(s._p,null);});
+  if(CFG.showResultCount) right.appendChild(h('span',{style:'font-size:12px;opacity:.6',
+    text:CFG.txtCount.replace('{n}',vis.length).replace('{total}',SAMPLE.length)}));
+  var anyActive=Object.keys(STATE.active).some(function(k){return (STATE.active[k]||[]).length;});
+  if(CFG.showClearAll&&anyActive) right.appendChild(h('button',{class:'btn ghost sm',text:CFG.txtClear,
+    onclick:function(){STATE.active={};renderPreview();}}));
+  if(right.children.length) wrap.appendChild(right);
+
+  root.appendChild(wrap);
+  root.style.marginBottom=CFG.marginBottom+'px';
+  root.style.fontSize=CFG.fontSize+'px';
+  bar.appendChild(root);
+
+  /* grid */
+  if(!vis.length){
+    grid.style.display='block';
+    grid.appendChild(h('div',{style:'padding:48px 0;text-align:center;opacity:.55;font-size:13px',text:CFG.txtNo}));
+  } else if(STATE.pv==='grid'){
+    grid.style.display='grid';
+    grid.style.gridTemplateColumns='repeat(3,1fr)';
+    vis.forEach(function(s){ grid.appendChild(tile(s,0,110)); });
+  } else if(STATE.pv==='masonry'){
+    grid.style.display='block';
+    var cols=3, colEls=[], holder=h('div',{style:'display:flex;gap:10px;align-items:flex-start'});
+    for(var i=0;i<cols;i++){var c=h('div',{style:'flex:1;display:flex;flex-direction:column;gap:10px'});colEls.push(c);holder.appendChild(c);}
+    var hgt=[0,0,0];
+    vis.forEach(function(s){
+      var ci=hgt.indexOf(Math.min.apply(null,hgt));
+      var hh=Math.round(150/s.ratio);
+      colEls[ci].appendChild(tile(s,0,hh));
+      hgt[ci]+=hh+10;
+    });
+    grid.appendChild(holder);
+  } else {
+    grid.style.display='block';
+    var rowH=96, containerW=440, rows=[], row=[], w=0;
+    vis.forEach(function(s){
+      var iw=rowH*s.ratio;
+      if(row.length && w+iw+10*row.length>containerW){rows.push({items:row,nat:w});row=[];w=0;}
+      row.push(s); w+=iw;
+    });
+    if(row.length)rows.push({items:row,nat:w,last:true});
+    rows.forEach(function(r){
+      var avail=containerW-10*(r.items.length-1);
+      var sc=Math.min(avail/r.nat, r.last?3:99);
+      var rowEl=h('div',{style:'display:flex;gap:10px;margin-bottom:10px'});
+      r.items.forEach(function(s){ rowEl.appendChild(tile(s,Math.round(rowH*s.ratio*sc),Math.round(rowH*sc))); });
+      grid.appendChild(rowEl);
+    });
+  }
+
+  document.getElementById('pvCount').textContent =
+    vis.length+' of '+SAMPLE.length+' images'+(anyActive?' — filtered':'');
+
+  renderCode();
+}
+
+function tile(s,w,hh){
+  var t=h('div',{class:'pv-tile'});
+  t.style.height=hh+'px';
+  if(w)t.style.width=w+'px'; else t.style.width='100%';
+  t.style.background='linear-gradient(135deg,#d9d6c8,#c3bfae)';
+  var label='';
+  if(CFG.captionMode==='clean') label=s._p.excerpt;
+  else if(CFG.captionMode==='meta'){
+    var fs=(CFG.captionFields.length?CFG.captionFields:Object.keys(s._p.fields));
+    label=fs.map(function(f){
+      var v=s._p.fields[f]; if(!v||!v.length)return '';
+      var leaves=v.filter(function(x){return !v.some(function(o){return o!==x&&o.indexOf(x+' > ')===0;});})
+                  .map(function(x){return x.split(' > ').pop();});
+      return leaves.length?((CFG.captionShowKeys?f+': ':'')+leaves.join(', ')):'';
+    }).filter(Boolean).join(CFG.captionDelimiter);
+  } else if(CFG.captionMode==='raw') label=s.cap;
+  if(label) t.appendChild(h('span',{text:label}));
+  return t;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Render                                                             */
+/* ------------------------------------------------------------------ */
+function render(){
+  var host=document.getElementById('panes');
+  host.innerHTML='';
+  (PANES[STATE.tab]()||[]).forEach(function(n){ if(n)host.appendChild(n); });
+  Array.prototype.forEach.call(document.querySelectorAll('.nav button'),function(b){
+    b.classList.toggle('on', b.dataset.tab===STATE.tab);
+  });
+  renderPreview();
+}
+
+document.querySelectorAll('.nav button').forEach(function(b){
+  b.addEventListener('click',function(){ STATE.tab=b.dataset.tab; render(); });
+});
+document.querySelectorAll('.pv-tabs button').forEach(function(b){
+  b.addEventListener('click',function(){
+    STATE.pv=b.dataset.pv;
+    document.querySelectorAll('.pv-tabs button').forEach(function(x){x.classList.toggle('on',x===b);});
+    renderPreview();
+  });
+});
+
+render();
+</script>
+</body>
+</html>

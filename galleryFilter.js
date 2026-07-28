@@ -99,6 +99,9 @@
     urlParamPrefix: 'f_',
     scrollOnChange: false,
 
+    // Strips only — how far a trailing row may be scaled up to fill the width.
+    maxLastRowScale: 3,
+
     text: {
       allText: 'All',
       filterButton: 'Filters',
@@ -824,9 +827,12 @@
     rows.forEach(function (r) {
       var avail = containerW - gutter * (r.items.length - 1);
       var scale = avail / r.natural;
-      // A trailing row that doesn't fill stays at its natural height rather
-      // than blowing one image up to full width.
-      if (r.last && scale > 1) scale = 1;
+      // Squarespace justifies the trailing row as well — verified live: two
+      // leftover images were scaled from a 300px target row height to 632px
+      // to fill the width. Matching that keeps a filtered gallery visually
+      // identical to the unfiltered one, which matters more than taste.
+      // The cap only stops a single leftover image becoming absurd.
+      if (r.last && scale > (CONFIG.maxLastRowScale || 3)) scale = CONFIG.maxLastRowScale || 3;
       r.scale = scale;
       r.h = Math.round(target * scale);
       r.items.forEach(function (e) {
