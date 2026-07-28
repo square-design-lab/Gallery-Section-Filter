@@ -1,6 +1,6 @@
-# SDL Gallery Filter — Build Plan
+# SDL Gallery Filter — Tech Spec
 
-**Status:** planning — awaiting approval
+**Status:** v1.0 built and live-tested; pushed to `square-design-lab/Gallery-Section-Filter`
 **Target:** Squarespace 7.1 **Gallery Sections** (not a collection page)
 **Test page:** https://test-site-sdl.squarespace.com/gallery (3 gallery sections: Grid, Strips, Masonry)
 **Verified against live DOM:** 2026-07-28
@@ -206,7 +206,92 @@ The live preview renders a mock gallery seeded with the **real test-page caption
 
 ---
 
-## 6. Build order
+## 5b. Additional findings during the build
+
+### `data-props` is authoritative — better than reverse-engineering geometry
+
+Each gallery controller element carries its real settings as JSON:
+
+```
+GalleryGrid     { numColumns:2, gutter:50, aspectRatio:'four-three', width:'inset' }
+GalleryStrips   { rowHeight:300, gutter:20, width:'full' }
+GalleryMasonry  { numColumns:2, gutter:20, width:'inset' }
+```
+
+Also `data-show-captions="true|false"` — the definitive signal for whether captions are on.
+
+**But `gutter` is in Squarespace's own unit, not pixels.** Masonry `gutter:20` renders as a 9px gap;
+strips `gutter:20` renders as ~20px. There is no reliable conversion, so the plugin takes
+`numColumns` / `rowHeight` from `data-props` and **measures the pixel gutter** from the initial
+layout (`x[1] - x[0] - colWidth`).
+
+### Item height must come from the rendered box, not the source image
+
+Squarespace writes an explicit pixel `height` on `.gallery-*-item-wrapper`. That height encodes any
+aspect-ratio crop the gallery is set to, so the plugin records `heightRatio = wrapperHeight /
+itemWidth` per item at init rather than using `data-image-dimensions`. A cropped gallery keeps its
+crop.
+
+### Strips justifies its trailing row — the plan got this wrong
+
+The plan assumed a partial last row stays at natural height. Live measurement disproved it: two
+leftover images were scaled from the 300px target row height to **632px** (903px wide each) to fill
+the container. The cap was removed; `maxLastRowScale` (default 3) only stops a single leftover image
+becoming absurd.
+
+### Bug: images revealed by filtering stayed invisible
+
+Squarespace fades gallery items in with `preFade` (opacity 0) plus a `fadeIn` class added by a scroll
+observer. An item that was `display:none` when that observer would have fired **never receives
+`fadeIn`**, so filtering it back into view left it permanently at opacity 0. Reproduced on the grid
+section: a matching image rendered blank. `apply()` now adds `fadeIn` to every visible item.
+
+### Bug: the mobile drawer inherited the wrong font
+
+The drawer is appended to `<body>`, so `font-family: inherit` resolved against the body, not the
+gallery section. On the test site the inline bar rendered **Inter** (section) while the drawer
+rendered **sans-serif** (body). `themeVarsFor()` now resolves the section's computed
+`font-family`, `letter-spacing` and `color` into instance-scoped CSS variables.
+
+### Testing artifacts worth remembering
+
+1. **`location.href = url + '#hash'` does not reload the page.** A whole round of "bugs" (a missing
+   filter group, an inverted mobile button) was a stale instance from the previous config still
+   running behind the `__sdlGalleryFilterBooted` guard. Use `location.replace()` with a cache-buster.
+2. **Chrome reports `visibilityState: "hidden"` when the window is occluded**, stops painting, and
+   `getComputedStyle` returns pre-transition values — the open drawer read as `translateX(-360px)`.
+   Screenshots taken in that state are stale. Assert on DOM state, and verify transition end-states
+   by injecting `transition: none !important`.
+
+---
+
+## 6. Verification performed
+
+All against the live test page, all passing.
+
+| Check | Result |
+|---|---|
+| Caption parsing vs ground truth | Exact on all 6 images, including `London, UK` kept whole, a missing trailing period, and a missing `Year` |
+| Nested tags | `Interiors` + `Interiors > Residential` both registered; selecting the parent matches all children |
+| Auto-discovery | Tags / Year / Location / Author found with zero config |
+| **Unfiltered masonry vs native** | **Pixel-identical** — rows at y 0 / 642 / 1284, width 891, wrapper 1908px |
+| **Unfiltered strips vs native** | **Pixel-identical** — x 0 / 462 / 924 / 1386 at 442px, trailing row 904px (native 903), wrapper 963px (native 961) |
+| Masonry filtered | Interiors → 2 items repacked side by side, wrapper 1908 → 624px |
+| Strips filtered | Justified row, no holes, correct wrapper height |
+| Grid filtered | 3 visible / 3 `display:none`, native CSS grid reflow |
+| Per-section independence | Filtering one section leaves the other two untouched |
+| Deep links | `?f_s3_tags=interiors&f_s1_year=2024&f_s2_location=madrid` restores all three sections independently |
+| Contextual dimming | With Year 2024 selected, Interiors/Hospitality/Hotel/Residential/SEO and Chicago/Madrid correctly dimmed |
+| Theme inheritance | Font Inter (matches the gallery's own captions), accent `rgb(21,20,20)` from section text, on-accent `#ffffff` by luminance, panel bg `rgb(255,254,245)` — the theme's off-white |
+| Captions hidden | 6/6 in `clean` mode; `meta` mode renders `Branding, Design / 2024` with leaf values only |
+| Sidebar layout | Sticky, 450px (25% of 1800); grid narrowed to 1314px and **all three layouts re-fit exactly** |
+| Mobile drawer | Button shown / inline groups hidden below the breakpoint; drawer opens to `translateX(0)`, overlay visible, body locked, filters work from inside, Escape closes and unlocks |
+| Generator output applied verbatim | Sidebar + `Tags` relabelled "Category" as `text` UI + `Author` disabled + meta captions + search + sort — all correct on the live site |
+| Gallery Lightbox coexistence | Lightbox opens after filtering and its thumbnail strip shows **3** thumbnails, matching the filtered set |
+
+---
+
+## 7. Original build order
 
 1. `galleryFilter.js` skeleton — section discovery, type detection, caption parse, taxonomy aggregation. Verify parsed output against §1.3 ground truth on the live page.
 2. Layout engine — parameter measurement, masonry packing, strips packing, `ResizeObserver`. Verify positions against Squarespace's own output with zero filters applied (must be pixel-identical before any filter is touched).
@@ -220,8 +305,23 @@ The live preview renders a mock gallery seeded with the **real test-page caption
 
 ---
 
-## 7. Open risks
+## 8. Remaining work
 
-- **Strips row-height rule** is inferred from one 2-column sample. Will be re-verified at 3+ columns and with mixed aspect ratios before the packing code is trusted.
-- **Column count on mobile** is read from Squarespace's own output at the current width; at a breakpoint the plugin re-measures, but if Squarespace lays out 1 column and we've filtered before the measurement lands, the first frame could be wrong. Mitigation: measure at init at the current width, and re-measure on `ResizeObserver` *before* re-packing.
-- **Gallery Lightbox index desync** — its `slideUrlToIndex` map is built over all items. After filtering, clicking image 5 may open lightbox slide 5 of the unfiltered set. Needs the `sdl:galleryfilter:changed` handshake, and possibly a small patch to the lightbox plugin.
+- **Cloudflare Pages** — not yet connected. `DOCUMENTATION.md` and the generator reference
+  `gallery-section-filter.pages.dev`; that hostname needs to be created and Git-connected to this
+  repo before the install snippet works for customers.
+- **Slideshow / Reel / Stacked** galleries are detected and skipped. Supporting them means driving a
+  carousel's internal slide array, which is a materially different problem.
+- **Strips row packing verified at 2 and 4 items per row only**, all at the same aspect ratio, because
+  the test gallery uses six images of two ratios. Worth a pass with mixed portrait/landscape.
+- **Mobile column count** for masonry uses a width heuristic (`<640px → 1 col`, `<900px → 2`) rather
+  than Squarespace's own rule, which could not be observed — Squarespace never re-lays-out on resize,
+  so there is no native behaviour to copy.
+- **Gallery Lightbox — opening is correct, navigation is not.** Tested the worst case: filtered to
+  `Tags: SEO`, which leaves only the *last* of six images. Clicking it opened that exact image
+  (`imgg-demo-a3mKUH6c`), so there is no index desync on open. But the lightbox's slide list is
+  built over **all six** items at page load, so the prev/next arrows still walk into filtered-out
+  images. Fixing this means patching `lightbox.js` to rebuild its list on the
+  `sdl:galleryfilter:changed` event — a change to the sibling plugin, deliberately not made here.
+- Untested: galleries with more than ~50 images, and pages mixing supported and unsupported gallery
+  types.
