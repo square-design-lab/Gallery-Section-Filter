@@ -305,6 +305,44 @@ All against the live test page, all passing.
 
 ---
 
+## 7b. v1.1 — Shop Filter parity
+
+The config generator was rebuilt in Shop Filter's layout, and the plugin gained the UI features
+that layout implies.
+
+**Generator** — 390px accordion sidebar (Captions & Data · Filter Groups · Display · "All" Option ·
+Layout & Behavior · Animation · Search & Sort · Styling · Labels & Text), topbar with
+Preview / Install code / Guide tabs, Desktop/Mobile toggle, Copy Code button, a live URL bar, and a
+preview with a Grid/Masonry/Strips switch. The preview runs the **real** parser, matcher and strips
+packing over the real test-gallery captions, so it reproduces the same edge cases the plugin ships
+against. Conditional reveal throughout: caption fields only in `meta` mode, sidebar width only in
+sidebar layout, drawer settings only while the button exists, sort settings only when sort is on.
+
+**Plugin additions**
+
+- `display.container: 'dropdown' | 'inline'` with an animated dropdown panel
+  (`grid-template-rows: 0fr → 1fr`, structured panel > inner > body so padding never shows as a
+  sliver while collapsed), count badge and rotating caret.
+- Sidebar and drawer render **accordions**, never dropdowns — a dropdown in a narrow column opens
+  over its own siblings. They carry the same badges and honour `collapsed`.
+- Active filter chips and a meta row (count / chips / Clear all) that hides when empty.
+- `filterButton.hideGroupsOnDesktop` — the "button only" desktop mode.
+- No-results reset button; `text.apply` supports `{n}` / `{total}`.
+- Named text delimiters with tight spacing after punctuation.
+
+**Bug found here.** The plugin defaulted `text.apply` to `'Show results'` while the generator's
+default was `'Show {n} results'`. Because the generator omits any key matching its own default, the
+key was never emitted and the drawer button rendered without a count. Caught on the live site, not
+in the generator — the two defaults have to be kept in step. A full audit of every other default
+pair found no further mismatches.
+
+**Verified live with generator output applied verbatim:** dropdowns (open/close, badges, contextual
+counts, indented sub-categories), inline buttons at 4px radius with centred alignment, group
+relabelling, per-group counts, `collapsed` honoured in the drawer, `Author` disabled, drawer on the
+right with accordions, chips, count, Clear all, and `radius: 0` reaching the CSS variable.
+
+---
+
 ## 8. Remaining work
 
 - **Cloudflare Pages** — not yet connected. `DOCUMENTATION.md` and the generator reference

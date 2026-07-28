@@ -1,4 +1,4 @@
-# SDL Gallery Filter v1.0 — Documentation
+# SDL Gallery Filter v1.1 — Documentation
 
 Category, tag and metadata filtering for Squarespace 7.1 **Gallery Sections** — Grid, Masonry and Strips.
 
@@ -99,6 +99,29 @@ metadata one way only.
 - `raw` — leave Squarespace's caption exactly as authored.
 - `hide` — no caption at all.
 
+### Where the options live
+
+```js
+display: {
+  container: 'dropdown',    // 'dropdown' | 'inline'
+  optionStyle: 'checkbox',  // 'checkbox' | 'buttons' | 'text'
+  showLabel: true,          // inline only — the group heading
+  pillRadius: 999,          // buttons only (also settable as styles.pillRadius)
+  delimiter: 'pipe'         // text only — pipe|space|comma|slash|dot|dash, or any literal
+}
+```
+
+- **`dropdown`** — one labelled button per group in the toolbar, opening an animated
+  panel. Carries a count badge when the group has selections.
+- **`inline`** — every option rendered straight into the toolbar.
+
+The **sidebar and drawer always use accordions** regardless of `container` — a dropdown inside a
+narrow column would open over its own siblings. Accordions carry the same count badge and honour
+each group's `collapsed` setting.
+
+A single group can override `optionStyle` with its own `ui` (`checkbox` · `pills` · `chips` ·
+`text`).
+
 ### Filter groups
 
 Groups are **discovered from your captions**. The default `groups: [{ type: 'auto' }]` expands into
@@ -145,12 +168,14 @@ You can also pin one group manually: `groups: [{ source: 'Tags' }, { type: 'auto
 | `stickySidebar` / `stickyToolbar` | `false` | |
 | `stickyTopOffset` | `20` | px |
 | `mobileBreakpoint` | `1024` | Below this the drawer takes over |
-| `filterButton.showOnDesktop` | `false` | Drawer button instead of inline filters |
+| `filterButton.showOnDesktop` | `false` | Add a “Filters” drawer button on desktop |
 | `filterButton.showOnMobile` | `true` | |
+| `filterButton.hideGroupsOnDesktop` | `false` | Desktop “button only” — hides the inline groups so the drawer is the sole route in |
 | `filterButton.side` | `'left'` | Which side the drawer slides from |
 
-Whenever the drawer button is off at a breakpoint, the inline groups render instead — **the filters
-can never become unreachable.**
+On mobile the button always replaces the inline groups. On desktop both can coexist unless
+`hideGroupsOnDesktop` is set. Whenever the button is off at a breakpoint the groups come back —
+**the filters can never become unreachable.**
 
 ### Display
 
@@ -160,7 +185,11 @@ can never become unreachable.**
 | `showCounts` | `false` |
 | `disableZeroOptions` | `true` — dim options that would return nothing |
 | `showResultCount` | `false` |
+| `showActiveChips` | `false` — removable chips listing what's selected |
 | `showClearAll` | `true` |
+
+The count, chips and “Clear all” share a **meta row** under the toolbar, which hides itself entirely
+when there is nothing to show.
 
 ### Search and sort
 
@@ -221,11 +250,14 @@ With `styles.inherit: true` (the default) the filter takes:
 
 ```js
 text: {
-  allText:'All', filterButton:'Filters', drawerTitle:'Filters', apply:'Show results',
-  clearAll:'Clear all', resultCount:'{n} of {total}',
-  noResults:'No images match these filters.', sortPlaceholder:'Sort'
+  allText:'All', filterButton:'Filters', drawerTitle:'Filters',
+  apply:'Show {n} results', clearAll:'Clear all', resultCount:'{n} of {total}',
+  noResults:'No images match these filters.', noResultsReset:'Clear all filters',
+  sortPlaceholder:'Sort'
 }
 ```
+
+`{n}` and `{total}` are substituted in `apply` and `resultCount`.
 
 ---
 

@@ -1,6 +1,6 @@
-# SDL Gallery Filter
+﻿# SDL Gallery Filter
 
-Category / tag filtering for **Squarespace 7.1 Gallery Sections** — Grid, Masonry and Strips.
+Category / tag filtering for **Squarespace 7.1 Gallery Sections** â€” Grid, Masonry and Strips.
 
 Squarespace gives gallery sections no tags, no categories and no JSON. This plugin reads
 metadata you write into each image's **caption**, builds a filter bar from it, and hides the
@@ -10,7 +10,7 @@ raw metadata so visitors never see it.
 Tags: Interiors > Residential, Branding. Year: 2025. Location: Madrid. Author: Sam.
 ```
 
-→ filter groups for **Tags** (with *Interiors* rolling up its children), **Year**,
+â†’ filter groups for **Tags** (with *Interiors* rolling up its children), **Year**,
 **Location** and **Author**, with no configuration at all.
 
 ## Install
@@ -23,14 +23,14 @@ Tags: Interiors > Residential, Branding. Year: 2025. Location: Madrid. Author: S
 <script src="https://gallery-section-filter.pages.dev/galleryFilter.js"></script>
 ```
 
-Paste into **Settings → Advanced → Code Injection → Footer**, or into the page's own
+Paste into **Settings â†’ Advanced â†’ Code Injection â†’ Footer**, or into the page's own
 Page Header Code Injection.
 
 ## Captions must be switched on
 
 The caption is the only place gallery metadata can live, and Squarespace omits it from the
 page entirely when captions are off. In the gallery section's **design panel, turn captions
-on** — the plugin hides them again visually (`captionMode: 'clean'` by default), so nothing
+on** â€” the plugin hides them again visually (`captionMode: 'clean'` by default), so nothing
 changes for visitors.
 
 ## Files
@@ -38,8 +38,8 @@ changes for visitors.
 | File | Purpose |
 |---|---|
 | `galleryFilter.js` | The plugin |
-| `galleryFilter.css` | Styles — inherits your site's fonts and colours |
-| `config-generator.html` | Visual config builder with live preview and setup guide |
+| `galleryFilter.css` | Styles â€” inherits your site's fonts and colours |
+| `config-generator.html` | Visual config builder: accordion sidebar, live preview, install code and setup guide |
 | `DOCUMENTATION.md` | Full reference |
 | `TECH-SPEC.md` | Verified DOM findings and architecture |
 
@@ -47,9 +47,10 @@ changes for visitors.
 
 | Type | Status |
 |---|---|
-| Grid | ✅ |
-| Masonry | ✅ |
-| Strips | ✅ |
-| Slideshow / Reel / Stacked | ❌ carousels — skipped with a console notice |
+| Grid | âœ… |
+| Masonry | âœ… |
+| Strips | âœ… |
+| Slideshow / Reel / Stacked | âŒ carousels â€” skipped with a console notice |
 
 Built by [Square Design Lab](https://squaredesignlab.com).
+
